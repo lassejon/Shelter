@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Microsoft.OpenApi;
+using Shelter.Api.Configuration;
 using Shelter.Infrastructure.Configuration;
 using Shelter.Infrastructure.Configuration.Extensions;
 
@@ -14,29 +14,6 @@ builder.Services.AddRouting(options => options.LowercaseUrls = true);
 
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddSwaggerGen(c =>
-{
-    const string schemeName = "Bearer";
-
-    // 1. Define the scheme
-    c.AddSecurityDefinition(schemeName, new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,   // <- Http + bearer is the canonical setup
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'."
-    });
-
-    // 2. Require that scheme for all operations
-    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-    {
-        // This constructor looks up the scheme named `schemeName` in the document
-        [new OpenApiSecuritySchemeReference(schemeName, document)] = []
-    });
-});
-
 // Authentication
 builder.Services.ConfigureIdentity();
 builder.Services.AddJwtAuthentication(builder.Configuration["JWT:ValidAudience"], builder.Configuration["JWT:ValidIssuer"], builder.Configuration["JWT:Secret"] ?? "Default secret");
@@ -44,7 +21,7 @@ builder.Services.AddJwtAuthentication(builder.Configuration["JWT:ValidAudience"]
 builder.Services
     .AddInfrastructure();
     // .AddApplication();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(o => o.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
 
 var app = builder.Build();
 
@@ -52,15 +29,21 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwaggerUI(o =>
+    {
+        o.SwaggerEndpoint("/openapi/v1.json", "Shelter API V1");
+        o.ConfigObject.AdditionalItems.Add("persistAuthorization", "true");
+    });
 }
 
-builder.Services.AddAuthorization();
-
-
 app.UseHttpsRedirection();
+app.UseAuthentication();
+
+app.UseRouting();
 
 app.UseAuthorization();
-
 app.MapControllers();
+
+app.UseCors("ClientPermission");
 
 app.Run();

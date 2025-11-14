@@ -83,7 +83,7 @@ public static class ServiceCollection
                 options.User.RequireUniqueEmail = true;
             });
 
-            services.AddIdentity<User, IdentityRole>()
+            services.AddIdentity<User, IdentityRole<Guid>>()
                 .AddEntityFrameworkStores<ShelterDbContext>()
                 .AddDefaultTokenProviders();
 
