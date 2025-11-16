@@ -17,7 +17,7 @@ public class Settings<T> where T : Settings<T>
             throw new InvalidOperationException($"Class name must end with {Suffix}");
         }
         
-        SectionName = sectionName;
+        SectionName = sectionName[..^Suffix.Length];;
 
         return serviceCollection;
     }

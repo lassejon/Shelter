@@ -7,7 +7,7 @@ using Shelter.Domain.Users;
 
 namespace Shelter.Infrastructure.Persistence;
 
-public class ShelterDbContext(DbContextOptions options) : IdentityDbContext<User, IdentityRole<Guid>, Guid>(options), IUnitOfWork
+public class ShelterDbContext(DbContextOptions<ShelterDbContext> options) : IdentityDbContext<User, IdentityRole<Guid>, Guid>(options), IUnitOfWork
 {
     public override DbSet<User> Users { get; set; } = null!;
 
@@ -18,14 +18,15 @@ public class ShelterDbContext(DbContextOptions options) : IdentityDbContext<User
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
-
         base.OnModelCreating(modelBuilder);
+        // modelBuilder.ApplyConfigurationsFromAssembly(typeof(ShelterDbContext).Assembly);
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
+#if DEBUG
         optionsBuilder.EnableSensitiveDataLogging();
+#endif
     }
 }

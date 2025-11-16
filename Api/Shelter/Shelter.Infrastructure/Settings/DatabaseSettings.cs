@@ -21,7 +21,6 @@ internal class DatabaseSettings : Settings<DatabaseSettings>
         services.AddDbContext<ShelterDbContext>(options =>
             options.UseNpgsql(ConnectionString, o =>
             {
-                o.MigrationsAssembly("Shelter.Infrastructure");
                 o.UseNetTopologySuite();
             }));
 
