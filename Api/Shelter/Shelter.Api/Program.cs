@@ -15,11 +15,10 @@ builder.Services.AddRouting(options => options.LowercaseUrls = true);
 builder.Services.AddEndpointsApiExplorer();
 
 // Authentication
-builder.Services
-    .AddInfrastructure();
-    // .AddApplication();
 builder.Services.ConfigureIdentity();
-builder.Services.AddJwtAuthentication(builder.Configuration["JWT:ValidAudience"], builder.Configuration["JWT:ValidIssuer"], builder.Configuration["JWT:Secret"] ?? "Default secret");
+builder.Services
+    .AddInfrastructure(builder.Configuration);
+    // .AddApplication();
 
 builder.Services.AddOpenApi(o => o.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
 

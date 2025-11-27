@@ -1,24 +1,34 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Shelter.Infrastructure.Settings.Base;
 
-public class Settings<T> where T : Settings<T>
+public abstract class Settings<T> where T : Settings<T>
+{
+    public abstract IServiceCollection OnConfigure(IServiceCollection services);
+}
+
+public static class SettingsExtensions
 {
     private const string Suffix = "Settings";
-    
-    protected string SectionName { get; private set; } = null!;
 
-    public virtual IServiceCollection OnConfigure(IServiceCollection serviceCollection)
+    public static IServiceCollection AddSettings<T>(
+        this IServiceCollection services,
+        IConfiguration configuration) where T : Settings<T>, new()
     {
-        var sectionName = typeof(T).Name;
-        
-        if (!sectionName.EndsWith(Suffix))
-        {
-            throw new InvalidOperationException($"Class name must end with {Suffix}");
-        }
-        
-        SectionName = sectionName[..^Suffix.Length];;
+        var name = typeof(T).Name;
+        if (!name.EndsWith(Suffix))
+            throw new InvalidOperationException($"Settings class '{name}' must end with '{Suffix}'.");
 
-        return serviceCollection;
+        var sectionName = name[..^Suffix.Length];
+        var section = configuration.GetSection(sectionName);
+
+        services.Configure<T>(configuration.GetSection(sectionName));
+        
+        var settings = new T();
+        section.Bind(settings);
+        
+        services = settings.OnConfigure(services);
+        return services;
     }
 }

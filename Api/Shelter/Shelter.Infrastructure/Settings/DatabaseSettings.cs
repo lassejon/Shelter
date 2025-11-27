@@ -8,16 +8,10 @@ namespace Shelter.Infrastructure.Settings;
 
 internal class DatabaseSettings : Settings<DatabaseSettings>
 {
-    private string ConnectionString { get; set; } = null!;
+    public string ConnectionString { get; init; } = null!;
 
     public override IServiceCollection OnConfigure(IServiceCollection services)
     {
-        var configuration = services.BuildServiceProvider().GetRequiredService<IConfiguration>();
-
-        services = base.OnConfigure(services);
-        
-        ConnectionString = configuration[$"{SectionName}:{nameof(ConnectionString)}"]!;
-        
         services.AddDbContext<ShelterDbContext>(options =>
             options.UseNpgsql(ConnectionString, o =>
             {
