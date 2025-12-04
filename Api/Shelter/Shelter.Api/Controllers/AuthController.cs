@@ -34,7 +34,7 @@ public sealed class AuthController(IAuthService authService, UserManager<User> u
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
-        
+
         var existing = await userManager.FindByEmailAsync(request.Email);
         if (existing is not null)
         {
@@ -58,32 +58,8 @@ public sealed class AuthController(IAuthService authService, UserManager<User> u
             // auto login after registration for now. Eventually add email confirmation step
             return await Login(new LoginRequest { Email = user.Email, Password = request.Password }, cancellationToken);
         }
-        
+
         var errors = result.Errors.Select(e => e.Description).ToArray();
         return BadRequest(new { errors });
     }
-    
-    [HttpGet("debug/auth")]
-    [AllowAnonymous]
-    public IActionResult DebugAuth()
-    {
-        return Ok(new
-        {
-            User.Identity?.IsAuthenticated,
-            User.Identity?.AuthenticationType,
-            Schemes = HttpContext.RequestServices
-                .GetRequiredService<IAuthenticationSchemeProvider>()
-                .GetAllSchemesAsync().Result.Select(s => s.Name)
-        });
-    }
-
-    
-    [HttpGet(Name = "TestAuth")]
-    [Authorize]
-    public IActionResult TestAuth()
-    {
-        return Ok("Logged in!");
-    }
-    
-    // Add refresh, register, logout endpoints later as needed
 }

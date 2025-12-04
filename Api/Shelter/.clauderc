@@ -1,0 +1,17 @@
+{
+    "context": [
+        {
+            "type": "file",
+            "path": ".claude/rules.md"
+        },
+        {
+            "type": "file",
+            "path": ".claude/architecture.md"
+        },
+        {
+            "type": "file",
+            "path": ".claude/api-guidelines.md"
+        }
+    ],
+    "model": "claude-sonnet-4-20250514"
+}
