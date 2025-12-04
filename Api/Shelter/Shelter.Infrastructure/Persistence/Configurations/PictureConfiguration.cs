@@ -8,7 +8,12 @@ public class PictureConfiguration : IEntityTypeConfiguration<Picture>
 {
     public void Configure(EntityTypeBuilder<Picture> builder)
     {
-        builder.ToTable("Pictures");
+        builder.ToTable("Pictures", t =>
+            t.HasCheckConstraint(
+                "CK_Pictures_TargetScope",
+                "(\"Scope\" = 0 AND \"ShelterId\" IS NOT NULL AND \"ReviewId\" IS NULL) OR " +
+                "(\"Scope\" = 1 AND \"ReviewId\" IS NOT NULL AND \"ShelterId\" IS NULL)"));
+
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.Scope)
@@ -45,10 +50,5 @@ public class PictureConfiguration : IEntityTypeConfiguration<Picture>
 
         builder.Property(x => x.UpdatedAt)
             .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-        builder.HasCheckConstraint(
-            "CK_Pictures_TargetScope",
-            "(\"Scope\" = 0 AND \"ShelterId\" IS NOT NULL AND \"ReviewId\" IS NULL) OR " +
-            "(\"Scope\" = 1 AND \"ReviewId\" IS NOT NULL AND \"ShelterId\" IS NULL)");
     }
 }
