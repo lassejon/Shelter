@@ -50,10 +50,10 @@ namespace Shelter.Application.Services;
 
 public interface IShelterService
 {
-    Task<ShelterDto> CreateAsync(CreateShelterDto dto, Guid ownerId);
-    Task<ShelterDto?> GetByIdAsync(Guid id);
-    Task<List<ShelterDto>> SearchAsync(ShelterSearchCriteria criteria);
-    Task<bool> UpdateAsync(Guid id, UpdateShelterDto dto);
+    Task<ShelterResponse> CreateAsync(CreateShelterRequest request, Guid ownerId);
+    Task<ShelterResponse?> GetByIdAsync(Guid id);
+    Task<List<ShelterResponse>> SearchAsync(ShelterSearchCriteria criteria);
+    Task<bool> UpdateAsync(Guid id, UpdateShelterRequest request);
     Task<bool> DeleteAsync(Guid id);
 }
 ```
@@ -67,17 +67,17 @@ public class ShelterService(
     ShelterDbContext context,
     ILogger<ShelterService> logger) : IShelterService
 {
-    public async Task<ShelterDto> CreateAsync(CreateShelterDto dto, Guid ownerId)
+    public async Task<ShelterResponse> CreateAsync(CreateShelterRequest request, Guid ownerId)
     {
         var shelter = new Domain.Shelters.Shelter
         {
             Id = Guid.NewGuid(),
             OwnerId = ownerId,
-            Name = dto.Name,
-            Description = dto.Description,
-            Capacity = dto.Capacity,
-            Location = new Point(dto.Longitude, dto.Latitude) { SRID = 4326 },
-            BookingPolicy = dto.BookingPolicy,
+            Name = request.Name,
+            Description = request.Description,
+            Capacity = request.Capacity,
+            Location = new Point(request.Longitude, request.Latitude) { SRID = 4326 },
+            BookingPolicy = request.BookingPolicy,
             IsActive = true
         };
         
@@ -86,20 +86,20 @@ public class ShelterService(
         
         logger.LogInformation("Created shelter {ShelterId} for owner {OwnerId}", shelter.Id, ownerId);
         
-        return MapToDto(shelter);
+        return MapToResponse(shelter);
     }
     
-    public async Task<ShelterDto?> GetByIdAsync(Guid id)
+    public async Task<ShelterResponse?> GetByIdAsync(Guid id)
     {
         var shelter = await context.Shelters
             .Include(s => s.Pictures)
             .Include(s => s.Reviews)
             .FirstOrDefaultAsync(s => s.Id == id);
             
-        return shelter == null ? null : MapToDto(shelter);
+        return shelter == null ? null : MapToResponse(shelter);
     }
     
-    private static ShelterDto MapToDto(Domain.Shelters.Shelter shelter) => new(
+    private static ShelterResponse MapToResponse(Domain.Shelters.Shelter shelter) => new(
         shelter.Id,
         shelter.Name,
         shelter.Description,
@@ -190,12 +190,36 @@ public class ShelterConfiguration : IEntityTypeConfiguration<Domain.Shelters.She
 
 ### 5. DTOs and Mapping
 
+**DTO Naming Conventions:**
+
+- **API Requests/Responses**: Use `-Request` and `-Response` suffixes
+- **Internal DTOs**: Use `-Dto` suffix only for internal transfers (not going in/out of API)
+- **Organize in folders**: Separate `Requests/` and `Responses/` folders
+
 **Use record types for DTOs:**
 ```csharp
-// Shelter.Application/DTOs/ShelterDto.cs
-namespace Shelter.Application.DTOs;
+// Shelter.Application/Requests/CreateShelterRequest.cs
+namespace Shelter.Application.Requests;
 
-public record ShelterDto(
+public record CreateShelterRequest(
+    string Name,
+    string? Description,
+    int Capacity,
+    double Latitude,
+    double Longitude,
+    BookingPolicy BookingPolicy);
+
+// Shelter.Application/Requests/UpdateShelterRequest.cs
+public record UpdateShelterRequest(
+    string Name,
+    string? Description,
+    int Capacity,
+    bool IsActive);
+
+// Shelter.Application/Responses/ShelterResponse.cs
+namespace Shelter.Application.Responses;
+
+public record ShelterResponse(
     Guid Id,
     string Name,
     string? Description,
@@ -204,61 +228,138 @@ public record ShelterDto(
     double Longitude,
     bool IsActive);
 
-public record CreateShelterDto(
-    string Name,
-    string? Description,
-    int Capacity,
-    double Latitude,
-    double Longitude,
-    BookingPolicy BookingPolicy);
+// Shelter.Application/DTOs/ShelterDto.cs (Internal use only - not API boundary)
+namespace Shelter.Application.DTOs;
 
-public record UpdateShelterDto(
+public record ShelterDto(
+    Guid Id,
     string Name,
-    string? Description,
     int Capacity,
-    bool IsActive);
+    Point Location);
+```
+
+**Folder Structure:**
+```
+Shelter.Application/
+├── Requests/
+│   ├── CreateShelterRequest.cs
+│   ├── UpdateShelterRequest.cs
+│   └── SearchShelterRequest.cs
+├── Responses/
+│   ├── ShelterResponse.cs
+│   ├── BookingResponse.cs
+│   └── SearchResultsResponse.cs
+└── DTOs/  (Internal use only)
+    └── ShelterDto.cs
 ```
 
 **Mapping in Services (keep it simple):**
 ```csharp
-// Simple mapping methods in service
-private static ShelterDto MapToDto(Domain.Shelters.Shelter shelter) => new(
+// Map to Response (for API)
+private static ShelterResponse MapToResponse(Domain.Shelters.Shelter shelter) => new(
     shelter.Id,
     shelter.Name,
     shelter.Description,
     shelter.Capacity,
-    shelter.Location.Y,
-    shelter.Location.X,
+    shelter.Location.Y, // Latitude
+    shelter.Location.X, // Longitude
     shelter.IsActive
+);
+
+// Map to internal DTO (for inter-service communication)
+private static ShelterDto MapToDto(Domain.Shelters.Shelter shelter) => new(
+    shelter.Id,
+    shelter.Name,
+    shelter.Capacity,
+    shelter.Location
 );
 ```
 
 ### 6. Transaction Management
 
-DbContext handles transactions automatically on `SaveChangesAsync()`.
+**Default Behavior - No Explicit Transactions Needed:**
 
-**For complex operations:**
+EF Core automatically wraps `SaveChangesAsync()` in a transaction. For most operations, **explicit transactions are unnecessary**.
+
 ```csharp
-public async Task<BookingDto> CreateBookingWithNotificationAsync(CreateBookingDto dto)
+// ✅ CORRECT - Single SaveChanges (implicit transaction)
+public async Task<BookingResponse> CreateBookingAsync(CreateBookingRequest request, Guid bookerId)
+{
+    var booking = new Booking { /* ... */ };
+    context.Bookings.Add(booking);
+    
+    // Add related entities - all saved atomically
+    context.Notifications.Add(new Notification
+    {
+        Booking = booking,
+        Message = "Booking confirmed"
+    });
+    
+    await context.SaveChangesAsync(); // Everything commits or rolls back together
+    
+    return MapToResponse(booking);
+}
+```
+
+**When to Use Explicit Transactions:**
+
+Only use explicit transactions when you need **multiple SaveChangesAsync calls** or **specific isolation levels**:
+
+```csharp
+// ✅ Multiple SaveChanges operations that must be atomic
+public async Task<TransferResult> TransferBookingAsync(Guid bookingId, Guid newShelterId)
 {
     await using var transaction = await context.Database.BeginTransactionAsync();
     
-    try
-    {
-        var booking = new Booking { /* ... */ };
-        context.Bookings.Add(booking);
-        await context.SaveChangesAsync();
-        
-        // Additional operations...
-        
-        await transaction.CommitAsync();
-        return MapToDto(booking);
-    }
-    catch
-    {
-        await transaction.RollbackAsync();
-        throw;
-    }
+    // First operation - update booking
+    var booking = await context.Bookings.FindAsync(bookingId);
+    booking.ShelterId = newShelterId;
+    await context.SaveChangesAsync(); // First commit point
+    
+    // Second operation - create audit record
+    context.AuditLogs.Add(new AuditLog { /* ... */ });
+    await context.SaveChangesAsync(); // Second commit point
+    
+    await transaction.CommitAsync();
+    return new TransferResult(Success: true);
+}
+
+// ✅ Specific isolation level required
+public async Task ProcessHighPriorityBookingAsync(CreateBookingDto dto)
+{
+    await using var transaction = await context.Database.BeginTransactionAsync(
+        IsolationLevel.Serializable);
+    
+    // Critical section requiring strict isolation
+    await context.SaveChangesAsync();
+    await transaction.CommitAsync();
+}
+```
+
+**Cross-Service Transactions with IUnitOfWork:**
+
+If you need transactions across multiple service calls (e.g., in a controller or orchestrator), use the IUnitOfWork pattern:
+
+```csharp
+// Shelter.Application/Abstractions/IUnitOfWork.cs
+public interface IUnitOfWork
+{
+    Task<int> CommitChangesAsync(CancellationToken cancellationToken = default);
+}
+
+// Controller example
+public async Task<IActionResult> CreateComplexBooking(ComplexBookingRequest request)
+{
+    await using var transaction = await context.Database.BeginTransactionAsync();
+    
+    var shelter = await shelterService.UpdateAvailabilityAsync(request.ShelterId);
+    var booking = await bookingService.CreateAsync(request);
+    await notificationService.SendConfirmationAsync(booking.Id);
+    
+    await unitOfWork.CommitChangesAsync();
+    await transaction.CommitAsync();
+    
+    return Ok(booking);
 }
 ```
 
@@ -266,7 +367,7 @@ public async Task<BookingDto> CreateBookingWithNotificationAsync(CreateBookingDt
 
 **Use IQueryable for flexibility:**
 ```csharp
-public async Task<List<ShelterDto>> SearchAsync(ShelterSearchCriteria criteria)
+public async Task<List<ShelterResponse>> SearchAsync(ShelterSearchCriteria criteria)
 {
     var query = context.Shelters
         .Where(s => s.IsActive)
@@ -290,7 +391,7 @@ public async Task<List<ShelterDto>> SearchAsync(ShelterSearchCriteria criteria)
     
     return await query
         .OrderBy(s => s.Name)
-        .Select(s => new ShelterDto(
+        .Select(s => new ShelterResponse(
             s.Id,
             s.Name,
             s.Description,
@@ -304,12 +405,35 @@ public async Task<List<ShelterDto>> SearchAsync(ShelterSearchCriteria criteria)
 
 ### 8. Error Handling
 
-**Service layer returns results or throws domain exceptions:**
+**Let Exceptions Bubble - Don't Use Empty Try-Catch Blocks:**
+
+❌ **ANTI-PATTERN** - Don't do this:
 ```csharp
-public async Task<BookingDto> CreateBookingAsync(CreateBookingDto dto, Guid bookerId)
+// ❌ WRONG - Pointless try-catch that just rethrows
+public async Task<BookingResponse> CreateBookingAsync(CreateBookingRequest request)
 {
-    var shelter = await context.Shelters.FindAsync(dto.ShelterId)
-        ?? throw new NotFoundException($"Shelter {dto.ShelterId} not found");
+    try
+    {
+        var booking = new Booking { /* ... */ };
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        return MapToResponse(booking);
+    }
+    catch
+    {
+        // Nothing useful happens here
+        throw; // Just let it bubble naturally!
+    }
+}
+```
+
+✅ **CORRECT** - Services throw domain exceptions and let them bubble:
+```csharp
+// ✅ Let exceptions bubble naturally
+public async Task<BookingResponse> CreateBookingAsync(CreateBookingRequest request, Guid bookerId)
+{
+    var shelter = await context.Shelters.FindAsync(request.ShelterId)
+        ?? throw new NotFoundException($"Shelter {request.ShelterId} not found");
     
     if (!shelter.IsActive)
     {
@@ -317,17 +441,116 @@ public async Task<BookingDto> CreateBookingAsync(CreateBookingDto dto, Guid book
     }
     
     var hasConflict = await context.Bookings
-        .AnyAsync(b => b.ShelterId == dto.ShelterId
+        .AnyAsync(b => b.ShelterId == request.ShelterId
             && b.Status != BookingStatus.Cancelled
-            && b.StartUtc < dto.EndUtc
-            && b.EndUtc > dto.StartUtc);
+            && b.StartUtc < request.EndUtc
+            && b.EndUtc > request.StartUtc);
     
     if (hasConflict)
     {
         throw new BookingConflictException("Shelter is already booked for this period");
     }
     
-    // Create booking...
+    var booking = new Booking
+    {
+        Id = Guid.NewGuid(),
+        ShelterId = request.ShelterId,
+        BookerId = bookerId,
+        StartUtc = request.StartUtc,
+        EndUtc = request.EndUtc,
+        Status = BookingStatus.Confirmed
+    };
+    
+    context.Bookings.Add(booking);
+    await context.SaveChangesAsync(); // EF handles transaction + rollback automatically
+    
+    return MapToResponse(booking);
+}
+```
+
+**When Try-Catch IS Appropriate:**
+
+Use try-catch when you're adding value:
+
+```csharp
+// ✅ Adding context to exceptions
+public async Task<BookingResponse> CreateBookingAsync(CreateBookingRequest request, Guid bookerId)
+{
+    try
+    {
+        // ... booking logic
+        await context.SaveChangesAsync();
+    }
+    catch (DbUpdateException ex)
+    {
+        logger.LogError(ex, "Failed to create booking for user {UserId}", bookerId);
+        throw new BookingCreationException("Unable to create booking. Please try again.", ex);
+    }
+}
+
+// ✅ Handling specific exceptions differently
+public async Task<BookingResponse> UpdateBookingAsync(Guid id, UpdateBookingRequest request)
+{
+    try
+    {
+        var booking = await context.Bookings.FindAsync(id);
+        // ... update logic
+        await context.SaveChangesAsync();
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        logger.LogWarning("Concurrency conflict updating booking {BookingId}", id);
+        return await RetryWithLatestDataAsync(id, request);
+    }
+}
+
+// ✅ Transforming exceptions to domain exceptions
+public async Task ProcessPaymentAsync(Guid bookingId, PaymentRequest payment)
+{
+    try
+    {
+        await paymentGateway.ChargeAsync(payment);
+    }
+    catch (PaymentGatewayException ex)
+    {
+        throw new PaymentFailedException("Payment processing failed", ex);
+    }
+}
+```
+
+**Global Exception Handling in Middleware:**
+
+Handle all exceptions centrally with middleware or filters:
+
+```csharp
+// Shelter.Api/Middleware/ExceptionHandlingMiddleware.cs
+public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
+{
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
+        {
+            await next(context);
+        }
+        catch (NotFoundException ex)
+        {
+            logger.LogWarning(ex, "Resource not found");
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            await context.Response.WriteAsJsonAsync(new { error = ex.Message });
+        }
+        catch (BusinessRuleException ex)
+        {
+            logger.LogWarning(ex, "Business rule violation");
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsJsonAsync(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unhandled exception");
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            await context.Response.WriteAsJsonAsync(new { error = "An error occurred" });
+        }
+    }
 }
 ```
 
@@ -341,5 +564,7 @@ public async Task<BookingDto> CreateBookingAsync(CreateBookingDto dto, Guid book
 6. ✅ Keep Domain layer dependency-free
 7. ✅ Use IQueryable for flexible queries
 8. ✅ Business logic in services, not controllers
-9. ✅ Let DbContext manage transactions
-10. ✅ Throw domain exceptions, handle in middleware
+9. ✅ Let DbContext manage transactions (explicit only when needed)
+10. ✅ Let exceptions bubble, handle globally in middleware
+11. ✅ No try-catch-rethrow anti-patterns
+12. ✅ Try-catch only when adding value (logging, transformation, specific handling)
