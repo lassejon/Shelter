@@ -1,5 +1,6 @@
 using NetTopologySuite.Geometries;
 using Shelter.Domain.Bookings;
+using Shelter.Domain.Pictures;
 using Shelter.Domain.Users;
 
 namespace Shelter.Domain.Shelters;
@@ -14,7 +15,6 @@ public enum ShelterBookingPolicy
 public class Shelter
 {
     public Guid Id { get; set; }
-
     public Guid OwnerId { get; set; }
     public User Owner { get; set; } = null!;
 
@@ -31,6 +31,7 @@ public class Shelter
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 
-    public ICollection<ShelterPicture> Pictures { get; set; } = new List<ShelterPicture>();
+    public ICollection<Picture> Pictures { get; set; } = new List<Picture>();
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
 }

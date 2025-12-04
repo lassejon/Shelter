@@ -22,8 +22,8 @@ public class Booking
     public Guid ShelterId { get; set; }
     public Shelters.Shelter Shelter { get; set; } = null!;
 
-    public Guid UserId { get; set; }
-    public User User { get; set; } = null!;
+    public Guid BookerId { get; set; }
+    public User Booker { get; set; } = null!;
 
     public DateTimeOffset StartUtc { get; set; }
     public DateTimeOffset EndUtc { get; set; }
