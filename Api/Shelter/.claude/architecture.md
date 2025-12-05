@@ -253,26 +253,180 @@ Shelter.Application/
     └── ShelterDto.cs
 ```
 
-**Mapping in Services (keep it simple):**
-```csharp
-// Map to Response (for API)
-private static ShelterResponse MapToResponse(Domain.Shelters.Shelter shelter) => new(
-    shelter.Id,
-    shelter.Name,
-    shelter.Description,
-    shelter.Capacity,
-    shelter.Location.Y, // Latitude
-    shelter.Location.X, // Longitude
-    shelter.IsActive
-);
+**Domain/Application Model Mapping:**
 
-// Map to internal DTO (for inter-service communication)
-private static ShelterDto MapToDto(Domain.Shelters.Shelter shelter) => new(
-    shelter.Id,
-    shelter.Name,
-    shelter.Capacity,
-    shelter.Location
-);
+**CRITICAL: Keep services clean by putting mapping logic in Request/Response objects.**
+
+#### Request Objects - `ToDomain()` Method
+Request objects should have a `ToDomain()` method that converts the request to a domain entity:
+
+```csharp
+// Shelter.Application/Requests/CreateShelterRequest.cs
+public record CreateShelterRequest(
+    string Name,
+    string? Description,
+    int Capacity,
+    double Latitude,
+    double Longitude,
+    ShelterBookingPolicy BookingPolicy,
+    List<PictureRequest>? Pictures)
+{
+    public Shelter ToDomain(Guid ownerId)
+    {
+        var shelter = new Shelter
+        {
+            Id = Guid.NewGuid(),
+            OwnerId = ownerId,
+            Name = Name,
+            Description = Description,
+            Capacity = Capacity,
+            Location = new Point(Longitude, Latitude) { SRID = 4326 },
+            BookingPolicy = BookingPolicy,
+            IsActive = true,
+            Pictures = []
+        };
+
+        if (Pictures != null && Pictures.Count > 0)
+        {
+            foreach (var pictureRequest in Pictures)
+            {
+                shelter.Pictures.Add(pictureRequest.ToDomain(ownerId, shelter.Id));
+            }
+        }
+
+        return shelter;
+    }
+}
+```
+
+#### Update Requests - `ApplyTo()` Method
+Update requests should have an `ApplyTo()` method that applies changes to an existing entity:
+
+```csharp
+// Shelter.Application/Requests/UpdateShelterRequest.cs
+public record UpdateShelterRequest(
+    string Name,
+    string? Description,
+    int Capacity,
+    bool IsActive)
+{
+    public void ApplyTo(Shelter shelter)
+    {
+        shelter.Name = Name;
+        shelter.Description = Description;
+        shelter.Capacity = Capacity;
+        shelter.IsActive = IsActive;
+    }
+}
+```
+
+#### Response Objects - `FromDomain()` Static Method
+Response objects should have a static `FromDomain()` method that creates a response from a domain entity:
+
+```csharp
+// Shelter.Application/Responses/ShelterResponse.cs
+public record ShelterResponse(
+    Guid Id,
+    string Name,
+    string? Description,
+    int Capacity,
+    double Latitude,
+    double Longitude,
+    ShelterBookingPolicy BookingPolicy,
+    bool IsActive,
+    List<PictureResponse> Pictures)
+{
+    public static ShelterResponse FromDomain(Shelter shelter) => new(
+        shelter.Id,
+        shelter.Name,
+        shelter.Description,
+        shelter.Capacity,
+        shelter.Location.Y, // Latitude
+        shelter.Location.X, // Longitude
+        shelter.BookingPolicy,
+        shelter.IsActive,
+        shelter.Pictures
+            .OrderBy(p => p.SortOrder)
+            .Select(PictureResponse.FromDomain)
+            .ToList());
+}
+
+public record PictureResponse(
+    Guid Id,
+    string Url,
+    string? Caption,
+    int SortOrder)
+{
+    public static PictureResponse FromDomain(Picture picture) => new(
+        picture.Id,
+        picture.Url,
+        picture.Caption,
+        picture.SortOrder);
+}
+```
+
+#### Clean Service Code
+With mapping in Request/Response objects, services stay clean and focused:
+
+```csharp
+// ✅ CORRECT - Clean service with no mapping clutter
+public class ShelterService(ShelterDbContext context, ILogger<ShelterService> logger) : IShelterService
+{
+    public async Task<ShelterResponse> CreateAsync(CreateShelterRequest request, Guid ownerId)
+    {
+        var shelter = request.ToDomain(ownerId);
+        
+        context.Shelters.Add(shelter);
+        await context.SaveChangesAsync();
+        
+        logger.LogInformation("Created shelter {ShelterId}", shelter.Id);
+        
+        return ShelterResponse.FromDomain(shelter);
+    }
+
+    public async Task<bool> UpdateAsync(Guid id, UpdateShelterRequest request)
+    {
+        var shelter = await context.Shelters.FindAsync(id);
+        
+        if (shelter == null)
+        {
+            return false;
+        }
+        
+        request.ApplyTo(shelter);
+        
+        await context.SaveChangesAsync();
+        
+        return true;
+    }
+}
+
+// ❌ WRONG - Mapping logic cluttering the service
+public class ShelterService(ShelterDbContext context) : IShelterService
+{
+    public async Task<ShelterResponse> CreateAsync(CreateShelterRequest request, Guid ownerId)
+    {
+        // Don't do this - mapping should be in the request object!
+        var shelter = new Shelter
+        {
+            Id = Guid.NewGuid(),
+            Name = request.Name,
+            Description = request.Description,
+            // ... many more lines of mapping
+        };
+        
+        context.Shelters.Add(shelter);
+        await context.SaveChangesAsync();
+        
+        // Don't do this - mapping should be in the response object!
+        return new ShelterResponse(
+            shelter.Id,
+            shelter.Name,
+            shelter.Description,
+            // ... many more lines of mapping
+        );
+    }
+}
 ```
 
 ### 6. Transaction Management
