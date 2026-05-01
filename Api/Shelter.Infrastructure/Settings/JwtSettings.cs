@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Shelter.Domain.Auth;
 using Shelter.Infrastructure.Settings.Base;
 
 namespace Shelter.Infrastructure.Settings;
@@ -38,7 +39,11 @@ public class JwtSettings : Settings<JwtSettings>
                 };
             });
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(AppPolicies.CanManageShelters, policy =>
+                policy.RequireRole(AppRoles.ShelterOwner));
+        });
 
         return services;
     }

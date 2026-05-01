@@ -1,50 +1,46 @@
 using App.Common;
 using App.Features.Shelters.Shared;
-using Shelter.Domain.Shelters;
+using App.Shelters;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
 namespace App.Features.Shelters.Create;
 
-public sealed class CreateShelterHandler(ILogger<CreateShelterHandler> logger)
+public sealed class CreateShelterHandler(
+    IShelterRepository shelterRepository,
+    IClock clock,
+    ILogger<CreateShelterHandler> logger)
 {
-    public Task<ShelterDetailResponse> HandleAsync(
+    public async Task<ShelterDetailResponse> HandleAsync(
         CreateShelterRequest request,
         Guid ownerId,
         IReadOnlyList<FileUpload> pictures,
         CancellationToken cancellationToken)
     {
-        var now = DateTimeOffset.UtcNow;
-        var shelterId = Guid.NewGuid();
+        var now = clock.UtcNow;
 
-        var shelter = new ShelterEntity
+        var shelter = ShelterEntity.Create(
+            ownerId,
+            request.Name,
+            request.Description,
+            request.Capacity,
+            request.Latitude,
+            request.Longitude,
+            request.BookingPolicy,
+            now);
+
+        foreach (var picture in pictures)
         {
-            Id = shelterId,
-            OwnerId = ownerId,
-            Name = request.Name,
-            Description = request.Description,
-            Capacity = request.Capacity,
-            Latitude = request.Latitude,
-            Longitude = request.Longitude,
-            BookingPolicy = request.BookingPolicy,
-            IsActive = true,
-            CreatedAt = now,
-            UpdatedAt = now,
-            Pictures = pictures
-                .Select((p, index) => new ShelterPicture
-                {
-                    Id = Guid.NewGuid(),
-                    ShelterId = shelterId,
-                    Url = $"https://mock.storage/shelters/{shelterId}/{Guid.NewGuid():N}-{p.FileName}",
-                    Caption = null,
-                    SortOrder = index,
-                })
-                .ToList(),
-        };
+            var url = $"https://mock.storage/shelters/{shelter.Id}/{Guid.NewGuid():N}-{picture.FileName}";
+            shelter.AddPicture(url, caption: null, now);
+        }
+
+        await shelterRepository.AddAsync(shelter, cancellationToken);
+        await shelterRepository.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation(
-            "Mock-created shelter {ShelterId} for owner {OwnerId} with {PictureCount} pictures",
+            "Created shelter {ShelterId} for owner {OwnerId} with {PictureCount} pictures",
             shelter.Id, shelter.OwnerId, shelter.Pictures.Count);
 
-        return Task.FromResult(ShelterDetailResponse.FromDomain(shelter));
+        return ShelterDetailResponse.FromDomain(shelter);
     }
 }
