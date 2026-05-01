@@ -73,8 +73,8 @@ The solution follows a strict four-layer layout with one-directional references:
 
 ```
 Shelter.Domain        → entities, value objects, enums; zero external dependencies
-Shelter.App           → use-case handlers, request/response DTOs
-Shelter.Infrastructure → JWT, in-memory stores; implements App interfaces
+Shelter.App           → use-case handlers, request/response DTOs, IShelterDbContext (DbSet + SaveChanges)
+Shelter.Infrastructure → JWT, EF Core DbContext + provider config, in-memory user store; implements App interfaces
 Shelter.Api           → HTTP endpoints, OpenAPI config, Program.cs
 ```
 
@@ -235,24 +235,79 @@ This places shared logic in a category that's structurally different from a shar
 
 Two developers adding `Create()` and `UpdateDetails()` to `Shelter.cs` will merge cleanly — Git auto-merges non-adjacent text additions. The residual conflict surface (both adding a method at the same line) resolves in seconds and has no semantic consequences. This is qualitatively different from the shared-service case, where adding a dependency to one method ripples through every other method's signature.
 
-### 2. Narrow interfaces in App, implementations in Infrastructure
+### 2. `IShelterDbContext` in App, concrete `DbContext` in Infrastructure
 
-For repeated I/O — loading and saving aggregates, accessing the file system, reading the clock — the project defines an interface in `Shelter.App/<Aggregate>/` (or `Shelter.App/Common/` for cross-aggregate concerns) and implements it in `Shelter.Infrastructure/<Aggregate>/`.
-
-The repository interface is deliberately narrow:
+The persistence seam is a thin interface in `Shelter.App/Persistence/` exposing only the DbSets handlers need plus a `SaveChangesAsync`:
 
 ```csharp
-public interface IShelterRepository
+public interface IShelterDbContext
 {
-    Task<Shelter?> GetByIdAsync(Guid id, CancellationToken ct);
-    Task AddAsync(Shelter shelter, CancellationToken ct);
-    Task SaveChangesAsync(CancellationToken ct);
+    DbSet<Shelter> Shelters { get; }
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 ```
 
-There is **no `UpdateAsync`**. EF Core (and the in-memory placeholder) tracks changes on loaded aggregates: load → mutate via domain methods → call `SaveChangesAsync`. An explicit update method is a code smell that signals the aggregate has been bypassed — its presence pushes mutation logic out of the entity and back into the handler.
+The concrete is a regular EF Core `DbContext` in `Shelter.Infrastructure/Persistence/` that implements the interface and configures the model in `OnModelCreating`:
 
-Filtered or paged reads do *not* live on this interface. When the project needs them, they go behind a separate `IShelterQueryService` that returns DTOs directly. Mixing aggregate-shaped writes and DTO-shaped reads on the same interface is a small CQRS-lite split that pays for itself: the write-side stays focused on consistency, the read-side stays focused on projection.
+```csharp
+public sealed class ShelterDbContext(DbContextOptions<ShelterDbContext> options)
+    : DbContext(options), IShelterDbContext
+{
+    public DbSet<Shelter> Shelters => Set<Shelter>();
+    // OnModelCreating maps the aggregate, the _pictures backing field, and ShelterPicture.
+}
+```
+
+There is no `IShelterRepository` and no `IShelterQueryService`. An earlier iteration of the project had both — a write-side repository with the narrow `Get / Add / SaveChanges` surface, plus a separate query service for projected reads in CQRS-lite fashion — but they were dropped before EF Core was wired. The reasoning is that `DbContext` is already what those abstractions were trying to be: it is itself a Unit of Work plus a collection of repositories, and EF's change tracker enforces the "load → mutate → save" discipline directly. Wrapping it in `IShelterRepository` was duplicating an abstraction EF Core already provides; introducing `IShelterQueryService` on top of that was adding a second indirection for a benefit that did not materialise at the project's current scale. The CQRS write/read split survives — but as a *conceptual* distinction (commands mutate; queries project) rather than as a structural one (separate interfaces with separate methods).
+
+Handlers therefore inject `IShelterDbContext` directly:
+
+```csharp
+public sealed class GetShelterHandler(IShelterDbContext db)
+{
+    public async Task<ShelterDetailResponse> HandleAsync(Guid id, CancellationToken ct)
+    {
+        var shelter = await db.Shelters
+            .Include(s => s.Pictures)
+            .FirstOrDefaultAsync(s => s.Id == id, ct)
+            ?? throw new DomainNotFoundException($"Shelter {id} was not found.");
+
+        return ShelterDetailResponse.FromDomain(shelter);
+    }
+}
+```
+
+Mutations still go through the aggregate — load, call domain methods, save:
+
+```csharp
+var shelter = await db.Shelters
+    .Include(s => s.Pictures)
+    .FirstOrDefaultAsync(s => s.Id == shelterId, ct)
+    ?? throw new DomainNotFoundException(...);
+
+shelter.UpdateDetails(...);   // domain method, enforces invariants
+await db.SaveChangesAsync(ct);
+```
+
+The discipline that *was* enforced by "no `UpdateAsync` on the repo" is now enforced by the aggregate's own API: every property has a private setter, so a handler cannot bypass the domain methods even if it tried. The repo abstraction was, in effect, restating an invariant that the aggregate already guaranteed.
+
+If two handlers later end up duplicating the same non-trivial lookup, the project will introduce a narrow service for that specific lookup (e.g. `IShelterLookup` with a single method). The rule mirrors the one for shared DTOs in `Features/<Aggregate>/Shared/`: **promote on actual reuse, not in anticipation.** A two-line `db.Shelters.FindAsync(...) ?? throw new DomainNotFoundException(...)` is not duplication worth abstracting; a thirty-line filtered query that two slices both need is.
+
+#### Why no MediatR
+
+The same reasoning applies one level up. Many CQRS codebases dispatch commands and queries through a mediator — `mediator.Send(new CreateShelterCommand(...))` resolves to an `ICommandHandler<CreateShelterCommand, ShelterDetailResponse>` registered by assembly scan. The project deliberately does not use this pattern. Endpoints inject the handler class and call `handler.HandleAsync(...)` directly:
+
+```csharp
+private static async Task<Created<ShelterDetailResponse>> HandleAsync(
+    [FromForm] CreateShelterRequest request,
+    IFormFileCollection pictures,
+    CreateShelterHandler handler,
+    ClaimsPrincipal user,
+    CancellationToken cancellationToken)
+{ ... }
+```
+
+Two practical reasons. First, a mediator forces every input to fit through a single message DTO, which means stuffing auth context (`Guid ownerId`) and HTTP-derived types (`IReadOnlyList<FileUpload>`) into the command class — concerns that have nothing to do with the operation's payload. Direct invocation lets those flow as method parameters where they belong. Second, the wins a mediator typically buys (cross-cutting decorators for logging / validation / transactions, polymorphic dispatch) are not currently needed at this handler count, and any of them can be added later without restructuring — decorators wrap registrations in DI, and dispatching by type is what `IServiceProvider` already does. CQRS is the conceptual split between writes and reads, not a particular dispatch mechanism.
 
 ### 3. Ambient dependencies behind one-property interfaces
 
@@ -359,7 +414,7 @@ The current user store is an in-memory `ConcurrentDictionary` (dev-only stub). T
 
 The infrastructure layer is not yet wired to a real database, but the abstractions that EF Core will eventually implement are already in place:
 
-- `IShelterRepository` is defined in the App layer with the narrow `GetById` / `Add` / `SaveChanges` surface described above. The current implementation is a `ConcurrentDictionary`-backed in-memory store living in `Shelter.Infrastructure.Shelters.InMemoryShelterRepository`. Replacing it with an EF Core `DbContext` is a single class swap with no changes upstream.
+- `IShelterDbContext` is defined in the App layer (`Shelter.App.Persistence`) and exposes only `DbSet<Shelter> Shelters` and `SaveChangesAsync`. The concrete `ShelterDbContext` lives in `Shelter.Infrastructure.Persistence`, currently configured with EF Core's in-memory provider (`UseInMemoryDatabase("Shelter")`) and registered alongside an `IShelterDbContext` resolver. Swapping to PostgreSQL is a one-line change in `AddInfrastructure` (`UseNpgsql(...)`) plus migration generation; nothing upstream of Infrastructure changes.
 - `IClock` is defined in `App.Common` with a `SystemClock` implementation in `Shelter.Infrastructure.Common`, both registered as singletons.
 - `Shelter` is a real aggregate: private setters, a `Create` factory that enforces invariants, and named mutator methods. Public mutation paths into the domain go through these methods exclusively. Invariant violations throw `DomainValidationException`.
 - The authorisation surface uses named policies (`AppPolicies.CanManageShelters`) registered against role requirements (`RequireRole(AppRoles.ShelterOwner)`); endpoints reference policies only.

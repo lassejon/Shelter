@@ -13,8 +13,9 @@ internal sealed class DomainExceptionHandler(IHostEnvironment environment) : IEx
     {
         var (status, title) = exception switch
         {
-            DomainValidationException => (StatusCodes.Status400BadRequest, "Validation failed"),
-            DomainNotFoundException   => (StatusCodes.Status404NotFound,   "Not found"),
+            DomainValidationException    => (StatusCodes.Status400BadRequest, "Validation failed"),
+            DomainAuthorizationException => (StatusCodes.Status403Forbidden,  "Forbidden"),
+            DomainNotFoundException      => (StatusCodes.Status404NotFound,   "Not found"),
             _ => (0, null!),
         };
 

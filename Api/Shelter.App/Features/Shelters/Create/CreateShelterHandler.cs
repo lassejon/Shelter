@@ -1,12 +1,12 @@
 using App.Common;
 using App.Features.Shelters.Shared;
-using App.Shelters;
+using App.Persistence;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
 namespace App.Features.Shelters.Create;
 
 public sealed class CreateShelterHandler(
-    IShelterRepository shelterRepository,
+    IShelterDbContext db,
     IClock clock,
     ILogger<CreateShelterHandler> logger)
 {
@@ -34,8 +34,8 @@ public sealed class CreateShelterHandler(
             shelter.AddPicture(url, caption: null, now);
         }
 
-        await shelterRepository.AddAsync(shelter, cancellationToken);
-        await shelterRepository.SaveChangesAsync(cancellationToken);
+        db.Shelters.Add(shelter);
+        await db.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation(
             "Created shelter {ShelterId} for owner {OwnerId} with {PictureCount} pictures",

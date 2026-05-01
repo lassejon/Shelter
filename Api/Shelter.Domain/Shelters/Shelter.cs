@@ -96,6 +96,15 @@ public class Shelter
         return picture;
     }
 
+    public void RemovePicture(Guid pictureId, DateTimeOffset now)
+    {
+        var picture = _pictures.FirstOrDefault(p => p.Id == pictureId);
+        if (picture is null) return;
+
+        _pictures.Remove(picture);
+        UpdatedAt = now;
+    }
+
     public void Deactivate(DateTimeOffset now)
     {
         if (!IsActive) return;
