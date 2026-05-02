@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: shelter-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shelter
+      POSTGRES_PASSWORD: shelter
+      POSTGRES_DB: shelter
+    ports:
+      - "5432:5432"
+    volumes:
+      - shelter-postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shelter -d shelter"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  shelter-postgres:

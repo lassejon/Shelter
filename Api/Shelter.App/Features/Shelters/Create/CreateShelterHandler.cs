@@ -1,6 +1,7 @@
 using App.Common;
 using App.Features.Shelters.Shared;
 using App.Persistence;
+using Shelter.Domain.Assets;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
 namespace App.Features.Shelters.Create;
@@ -8,6 +9,7 @@ namespace App.Features.Shelters.Create;
 public sealed class CreateShelterHandler(
     IShelterDbContext db,
     IClock clock,
+    IFileStorage storage,
     ILogger<CreateShelterHandler> logger)
 {
     public async Task<ShelterDetailResponse> HandleAsync(
@@ -30,8 +32,9 @@ public sealed class CreateShelterHandler(
 
         foreach (var picture in pictures)
         {
-            var url = $"https://mock.storage/shelters/{shelter.Id}/{Guid.NewGuid():N}-{picture.FileName}";
-            shelter.AddPicture(url, caption: null, now);
+            var asset = await UploadAsync(ownerId, shelter.Id, picture, now, cancellationToken);
+            db.Assets.Add(asset);
+            shelter.AddPicture(asset.Id, caption: null, now);
         }
 
         db.Shelters.Add(shelter);
@@ -41,6 +44,18 @@ public sealed class CreateShelterHandler(
             "Created shelter {ShelterId} for owner {OwnerId} with {PictureCount} pictures",
             shelter.Id, shelter.OwnerId, shelter.Pictures.Count);
 
-        return ShelterDetailResponse.FromDomain(shelter);
+        return ShelterDetailResponse.FromDomain(shelter, storage);
+    }
+
+    private async Task<Asset> UploadAsync(
+        Guid ownerId,
+        Guid shelterId,
+        FileUpload picture,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var blobKey = $"shelters/{shelterId}/{Guid.NewGuid():N}";
+        await storage.UploadAsync(blobKey, picture.Content, picture.ContentType, cancellationToken);
+        return Asset.Create(ownerId, blobKey, picture.ContentType, now);
     }
 }

@@ -1,9 +1,10 @@
+using App.Common;
 using App.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace App.Features.Shelters.Search;
 
-public sealed class SearchShelterHandler(IShelterDbContext db)
+public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage storage)
 {
     public async Task<IReadOnlyList<SearchShelterResponse>> HandleAsync(
         SearchShelterRequest request,
@@ -37,8 +38,9 @@ public sealed class SearchShelterHandler(IShelterDbContext db)
 
         var shelters = await query
             .Include(s => s.Pictures)
+                .ThenInclude(p => p.Asset)
             .ToListAsync(cancellationToken);
 
-        return shelters.Select(SearchShelterResponse.FromDomain).ToList();
+        return shelters.Select(s => SearchShelterResponse.FromDomain(s, storage)).ToList();
     }
 }

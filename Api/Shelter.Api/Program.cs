@@ -1,8 +1,10 @@
 using App;
+using Microsoft.EntityFrameworkCore;
 using Shelter.Api.Configuration;
 using Shelter.Api.Features.Auth;
 using Shelter.Api.Features.Shelters;
 using Shelter.Infrastructure;
+using Shelter.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +23,12 @@ app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ShelterDbContext>();
+        await db.Database.MigrateAsync();
+    }
+
     app.MapOpenApi();
     app.UseSwaggerUI(o =>
     {

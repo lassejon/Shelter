@@ -85,12 +85,12 @@ public class Shelter
         UpdatedAt = now;
     }
 
-    public ShelterPicture AddPicture(string url, string? caption, DateTimeOffset now)
+    public ShelterPicture AddPicture(Guid assetId, string? caption, DateTimeOffset now)
     {
-        if (string.IsNullOrWhiteSpace(url))
-            throw new DomainValidationException("Picture URL must be provided.");
+        if (assetId == Guid.Empty)
+            throw new DomainValidationException("Picture asset id must be provided.");
 
-        var picture = new ShelterPicture(Guid.NewGuid(), Id, url, caption, _pictures.Count);
+        var picture = new ShelterPicture(Guid.NewGuid(), Id, assetId, caption, _pictures.Count);
         _pictures.Add(picture);
         UpdatedAt = now;
         return picture;

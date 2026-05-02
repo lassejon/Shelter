@@ -1,3 +1,4 @@
+using App.Common;
 using App.Features.Shelters.Shared;
 using Shelter.Domain.Shelters;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
@@ -18,7 +19,7 @@ public record SearchShelterResponse(
 {
     private const int MaxPicturesInSearch = 2;
 
-    public static SearchShelterResponse FromDomain(ShelterEntity shelter) => new(
+    public static SearchShelterResponse FromDomain(ShelterEntity shelter, IFileStorage storage) => new(
         shelter.Id,
         shelter.Name,
         shelter.Description,
@@ -30,7 +31,7 @@ public record SearchShelterResponse(
         shelter.Pictures
             .OrderBy(p => p.SortOrder)
             .Take(MaxPicturesInSearch)
-            .Select(p => new ShelterPictureResponse(p.Id, p.Url, p.Caption, p.SortOrder))
+            .Select(p => new ShelterPictureResponse(p.Id, storage.GetPublicUrl(p.Asset.BlobKey), p.Caption, p.SortOrder))
             .ToList(),
         ShelterReviewSummary.Empty);
 }

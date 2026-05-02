@@ -1,3 +1,4 @@
+using App.Common;
 using App.Features.Auth.Login;
 using App.Features.Auth.Register;
 using App.Features.Shelters.Create;
@@ -17,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<SearchShelterHandler>();
         services.AddScoped<UpdateShelterHandler>();
         services.AddScoped<DeleteShelterHandler>();
+        services.AddScoped<AssetOrphanRecovery>();
         return services;
     }
 
