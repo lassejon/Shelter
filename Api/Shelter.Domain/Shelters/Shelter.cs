@@ -1,3 +1,4 @@
+using Shelter.Domain.Bookings;
 using Shelter.Domain.Common;
 
 namespace Shelter.Domain.Shelters;
@@ -120,6 +121,30 @@ public class Shelter
     }
 
     public bool OwnedBy(Guid userId) => OwnerId == userId;
+
+    public void AssertCanBeBooked(BookingType type, int guests)
+    {
+        if (!IsActive)
+            throw new DomainValidationException("Shelter is not active.");
+        if (!AcceptsBookingType(type))
+            throw new DomainValidationException(BookingPolicy switch
+            {
+                ShelterBookingPolicy.ExclusiveOnly => "Shelter only accepts exclusive bookings.",
+                ShelterBookingPolicy.InclusiveOnly => "Shelter only accepts inclusive bookings.",
+                _ => "Shelter does not accept this booking type.",
+            });
+        if (guests > Capacity)
+            throw new DomainValidationException(
+                $"Guest count ({guests}) exceeds shelter capacity ({Capacity}).");
+    }
+
+    private bool AcceptsBookingType(BookingType type) => BookingPolicy switch
+    {
+        ShelterBookingPolicy.ExclusiveOnly => type == BookingType.Exclusive,
+        ShelterBookingPolicy.InclusiveOnly => type == BookingType.Inclusive,
+        ShelterBookingPolicy.Both => true,
+        _ => false,
+    };
 
     private static void ValidateName(string name)
     {

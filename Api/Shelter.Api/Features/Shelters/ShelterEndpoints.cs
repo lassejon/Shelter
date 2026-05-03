@@ -1,3 +1,5 @@
+using Shelter.Api.Features.Bookings.Create;
+using Shelter.Api.Features.Bookings.SearchByShelter;
 using Shelter.Api.Features.Shelters.Create;
 using Shelter.Api.Features.Shelters.Delete;
 using Shelter.Api.Features.Shelters.Get;
@@ -18,6 +20,12 @@ public static class ShelterEndpoints
         group.MapSearchShelter();
         group.MapUpdateShelter();
         group.MapDeleteShelter();
+
+        // Nested booking sub-resources: create/list bookings *for a specific shelter*.
+        // Slice files live under Features/Bookings/, only the URL mounting is nested here.
+        var bookingsUnderShelter = group.MapGroup("/{id:guid}/bookings");
+        bookingsUnderShelter.MapCreateBooking();
+        bookingsUnderShelter.MapSearchBookingByShelter();
 
         return app;
     }

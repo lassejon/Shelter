@@ -1,6 +1,11 @@
 using App.Common;
 using App.Features.Auth.Login;
 using App.Features.Auth.Register;
+using App.Features.Bookings.Cancel;
+using App.Features.Bookings.Create;
+using App.Features.Bookings.Get;
+using App.Features.Bookings.SearchByBooker;
+using App.Features.Bookings.SearchByShelter;
 using App.Features.Shelters.Create;
 using App.Features.Shelters.Delete;
 using App.Features.Shelters.Get;
@@ -26,6 +31,16 @@ public static class DependencyInjection
     {
         services.AddScoped<LoginHandler>();
         services.AddScoped<RegisterHandler>();
+        return services;
+    }
+
+    public static IServiceCollection AddBookingApplication(this IServiceCollection services)
+    {
+        services.AddScoped<CreateBookingHandler>();
+        services.AddScoped<GetBookingHandler>();
+        services.AddScoped<SearchBookingByBookerHandler>();
+        services.AddScoped<SearchBookingByShelterHandler>();
+        services.AddScoped<CancelBookingHandler>();
         return services;
     }
 }

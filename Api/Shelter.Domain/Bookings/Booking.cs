@@ -27,9 +27,12 @@ public class Booking
         DateTimeOffset endUtc,
         int guests,
         BookingType type,
+        DateTimeOffset today,
         DateTimeOffset now)
     {
+        ValidateNotInPast(startUtc, today);
         ValidateRange(startUtc, endUtc);
+        ValidateMaxNights(startUtc, endUtc);
         ValidateGuests(guests);
         ValidateType(type);
 
@@ -42,7 +45,8 @@ public class Booking
             EndUtc = endUtc,
             Guests = guests,
             Type = type,
-            Status = BookingStatus.Pending,
+            // MVP: auto-confirm. Switch to Pending when an approval workflow lands.
+            Status = BookingStatus.Confirmed,
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -60,7 +64,10 @@ public class Booking
 
     public void Cancel(DateTimeOffset now)
     {
-        if (Status == BookingStatus.Cancelled) return;
+        if (Status == BookingStatus.Cancelled)
+            throw new DomainValidationException("Booking is already cancelled.");
+        if (now >= StartUtc)
+            throw new DomainValidationException("Cannot cancel a booking that has started or is in the past.");
 
         Status = BookingStatus.Cancelled;
         UpdatedAt = now;
@@ -83,7 +90,20 @@ public class Booking
     private static void ValidateRange(DateTimeOffset startUtc, DateTimeOffset endUtc)
     {
         if (endUtc <= startUtc)
-            throw new DomainValidationException("Booking end must be after start.");
+            throw new DomainValidationException("Booking end must be after start (at least 1 night).");
+    }
+
+    private static void ValidateNotInPast(DateTimeOffset startUtc, DateTimeOffset today)
+    {
+        if (startUtc < today)
+            throw new DomainValidationException("Booking start must be today or in the future.");
+    }
+
+    private static void ValidateMaxNights(DateTimeOffset startUtc, DateTimeOffset endUtc)
+    {
+        var nights = (endUtc - startUtc).Days;
+        if (nights > 365)
+            throw new DomainValidationException("Booking duration cannot exceed 365 nights.");
     }
 
     private static void ValidateGuests(int guests)
