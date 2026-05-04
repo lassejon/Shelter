@@ -16,7 +16,7 @@ public record ShelterDetailResponse(
     bool IsActive,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
-    List<ShelterPictureResponse> Pictures)
+    List<PictureResponse> Pictures)
 {
     public static ShelterDetailResponse FromDomain(ShelterEntity shelter, IFileStorage storage) => new(
         shelter.Id,
@@ -32,6 +32,6 @@ public record ShelterDetailResponse(
         shelter.UpdatedAt,
         shelter.Pictures
             .OrderBy(p => p.SortOrder)
-            .Select(p => new ShelterPictureResponse(p.Id, storage.GetPublicUrl(p.Asset.BlobKey), p.Caption, p.SortOrder))
+            .Select(p => new PictureResponse(p.Id, storage.GetPublicUrl(p.Asset.BlobKey), p.Caption, p.SortOrder))
             .ToList());
 }

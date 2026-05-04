@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Shelter.Api.Configuration;
 using Shelter.Api.Features.Auth;
 using Shelter.Api.Features.Bookings;
+using Shelter.Api.Features.Reviews;
 using Shelter.Api.Features.Shelters;
 using Shelter.Infrastructure;
 using Shelter.Infrastructure.Persistence;
@@ -15,6 +16,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddShelterApplication();
 builder.Services.AddAuthApplication();
 builder.Services.AddBookingApplication();
+builder.Services.AddReviewApplication();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
@@ -47,5 +49,6 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapShelterEndpoints();
 app.MapBookingEndpoints();
+app.MapReviewEndpoints();
 
 app.Run();

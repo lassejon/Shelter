@@ -1,5 +1,5 @@
 using App.Common;
-using App.Features.Shelters.Shared;
+using App.Features.Reviews.Shared;
 using Shelter.Domain.Shelters;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
@@ -14,8 +14,8 @@ public record SearchShelterResponse(
     double Longitude,
     ShelterBookingPolicy BookingPolicy,
     bool IsActive,
-    List<ShelterPictureResponse> Pictures,
-    ShelterReviewSummary ReviewSummary)
+    List<PictureResponse> Pictures,
+    ReviewSummary ReviewSummary)
 {
     private const int MaxPicturesInSearch = 2;
 
@@ -31,12 +31,8 @@ public record SearchShelterResponse(
         shelter.Pictures
             .OrderBy(p => p.SortOrder)
             .Take(MaxPicturesInSearch)
-            .Select(p => new ShelterPictureResponse(p.Id, storage.GetPublicUrl(p.Asset.BlobKey), p.Caption, p.SortOrder))
+            .Select(p => new PictureResponse(p.Id, storage.GetPublicUrl(p.Asset.BlobKey), p.Caption, p.SortOrder))
             .ToList(),
-        ShelterReviewSummary.Empty);
-}
-
-public record ShelterReviewSummary(double AverageRating, int TotalCount)
-{
-    public static ShelterReviewSummary Empty { get; } = new(0d, 0);
+        // TODO: project per-shelter ReviewSummary in SearchShelterHandler in search response.
+        ReviewSummary.Empty);
 }

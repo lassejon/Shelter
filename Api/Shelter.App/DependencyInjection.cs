@@ -6,6 +6,13 @@ using App.Features.Bookings.Create;
 using App.Features.Bookings.Get;
 using App.Features.Bookings.SearchByBooker;
 using App.Features.Bookings.SearchByShelter;
+using App.Features.Reviews.Create;
+using App.Features.Reviews.Delete;
+using App.Features.Reviews.Get;
+using App.Features.Reviews.GetMine;
+using App.Features.Reviews.SearchByShelter;
+using App.Features.Reviews.SearchPicture;
+using App.Features.Reviews.Update;
 using App.Features.Shelters.Create;
 using App.Features.Shelters.Delete;
 using App.Features.Shelters.Get;
@@ -41,6 +48,18 @@ public static class DependencyInjection
         services.AddScoped<SearchBookingByBookerHandler>();
         services.AddScoped<SearchBookingByShelterHandler>();
         services.AddScoped<CancelBookingHandler>();
+        return services;
+    }
+
+    public static IServiceCollection AddReviewApplication(this IServiceCollection services)
+    {
+        services.AddScoped<CreateReviewHandler>();
+        services.AddScoped<GetReviewHandler>();
+        services.AddScoped<GetMyReviewHandler>();
+        services.AddScoped<SearchReviewByShelterHandler>();
+        services.AddScoped<SearchReviewPictureHandler>();
+        services.AddScoped<UpdateReviewHandler>();
+        services.AddScoped<DeleteReviewHandler>();
         return services;
     }
 }

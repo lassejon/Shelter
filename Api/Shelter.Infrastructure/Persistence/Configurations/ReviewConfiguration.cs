@@ -41,6 +41,6 @@ public sealed class ReviewConfiguration : IEntityTypeConfiguration<Review>
             .HasField("_pictures")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.HasIndex(r => new { r.ShelterId, r.ReviewerId });
+        builder.HasIndex(r => new { r.ShelterId, r.ReviewerId }).IsUnique();
     }
 }
