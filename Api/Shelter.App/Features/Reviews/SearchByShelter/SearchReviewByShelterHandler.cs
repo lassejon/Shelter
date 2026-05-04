@@ -37,6 +37,7 @@ public sealed class SearchReviewByShelterHandler(IShelterDbContext db, IFileStor
             .OrderByDescending(r => r.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Include(r => r.Reviewer)
             .Include(r => r.Pictures)
                 .ThenInclude(p => p.Asset)
             .ToListAsync(cancellationToken);

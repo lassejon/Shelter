@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shelter.Domain.Bookings;
+using Shelter.Domain.Users;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
 namespace Shelter.Infrastructure.Persistence.Configurations;
@@ -35,6 +36,11 @@ public sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
             .WithMany()
             .HasForeignKey(b => b.ShelterId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(b => b.Booker)
+            .WithMany()
+            .HasForeignKey(b => b.BookerId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(b => new { b.ShelterId, b.StartUtc, b.EndUtc });
     }

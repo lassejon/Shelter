@@ -1,4 +1,5 @@
 using App.Common;
+using App.Features.Reviews.Shared;
 using App.Features.Shelters.Shared;
 using App.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -85,7 +86,23 @@ public sealed class UpdateShelterHandler(
 
         logger.LogInformation("Updated shelter {ShelterId} for owner {OwnerId}", shelter.Id, shelter.OwnerId);
 
-        return ShelterDetailResponse.FromDomain(shelter, storage);
+        var summary = await LoadSummaryAsync(shelter.Id, cancellationToken);
+
+        return ShelterDetailResponse.FromDomain(shelter, storage, summary);
+    }
+
+    private async Task<ReviewSummary> LoadSummaryAsync(Guid shelterId, CancellationToken cancellationToken)
+    {
+        var row = await db.Reviews
+            .AsNoTracking()
+            .Where(r => r.ShelterId == shelterId)
+            .GroupBy(r => r.ShelterId)
+            .Select(g => new { Average = g.Average(r => (double)(int)r.Rating), Count = g.Count() })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return row is null
+            ? ReviewSummary.Empty
+            : new ReviewSummary(Math.Round(row.Average, 2), row.Count);
     }
 
     private async Task<Asset> UploadAsync(

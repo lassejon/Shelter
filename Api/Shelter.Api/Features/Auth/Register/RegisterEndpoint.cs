@@ -17,12 +17,12 @@ public static class RegisterEndpoint
         return group;
     }
 
-    private static async Task<Results<Ok<AuthResponse>, Conflict<ProblemDetails>>> HandleAsync(
+    private static async Task<Results<Ok<AuthResponse>, BadRequest<ProblemDetails>, Conflict<ProblemDetails>>> HandleAsync(
         RegisterRequest request,
         RegisterHandler handler,
         CancellationToken cancellationToken)
     {
-        var (response, failure) = await handler.HandleAsync(request, cancellationToken);
+        var (response, failure, errors) = await handler.HandleAsync(request, cancellationToken);
 
         if (failure == RegisterFailure.EmailAlreadyExists)
         {
@@ -31,6 +31,16 @@ public static class RegisterEndpoint
                 Title = "Email already registered",
                 Status = StatusCodes.Status409Conflict,
                 Detail = $"An account with email '{request.Email}' already exists.",
+            });
+        }
+
+        if (failure == RegisterFailure.InvalidPassword)
+        {
+            return TypedResults.BadRequest(new ProblemDetails
+            {
+                Title = "Registration failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = errors is { Count: > 0 } ? string.Join(" ", errors) : "Password did not meet the configured requirements.",
             });
         }
 

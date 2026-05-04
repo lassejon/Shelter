@@ -22,6 +22,7 @@ public sealed class UpdateReviewHandler(
         CancellationToken cancellationToken)
     {
         var review = await db.Reviews
+            .Include(r => r.Reviewer)
             .Include(r => r.Pictures)
                 .ThenInclude(p => p.Asset)
             .FirstOrDefaultAsync(r => r.Id == reviewId, cancellationToken)

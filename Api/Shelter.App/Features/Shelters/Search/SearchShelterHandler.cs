@@ -1,6 +1,8 @@
 using App.Common;
+using App.Features.Reviews.Shared;
 using App.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Shelter.Domain.Common;
 
 namespace App.Features.Shelters.Search;
 
@@ -29,7 +31,17 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
         if (request.MaxCapacity.HasValue)
             query = query.Where(s => s.Capacity <= request.MaxCapacity.Value);
 
-        // MinRating filter is deferred until the Reviews aggregate exists.
+        // MinRating: only include shelters that have at least one review and meet the average-rating threshold.
+        if (request.MinRating.HasValue)
+        {
+            var minRating = request.MinRating.Value;
+            if (minRating < 1 || minRating > 5)
+                throw new DomainValidationException("MinRating must be between 1 and 5.");
+
+            query = query.Where(s =>
+                db.Reviews.Any(r => r.ShelterId == s.Id) &&
+                db.Reviews.Where(r => r.ShelterId == s.Id).Average(r => (double)(int)r.Rating) >= minRating);
+        }
 
         query = query.OrderBy(s => s.Name);
 
@@ -41,6 +53,28 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
                 .ThenInclude(p => p.Asset)
             .ToListAsync(cancellationToken);
 
-        return shelters.Select(s => SearchShelterResponse.FromDomain(s, storage)).ToList();
+        var summaries = await BuildSummariesAsync(shelters.Select(s => s.Id).ToList(), cancellationToken);
+
+        return shelters
+            .Select(s => SearchShelterResponse.FromDomain(s, storage, summaries.GetValueOrDefault(s.Id, ReviewSummary.Empty)))
+            .ToList();
+    }
+
+    private async Task<Dictionary<Guid, ReviewSummary>> BuildSummariesAsync(
+        IReadOnlyList<Guid> shelterIds,
+        CancellationToken cancellationToken)
+    {
+        if (shelterIds.Count == 0) return new Dictionary<Guid, ReviewSummary>();
+
+        var rows = await db.Reviews
+            .AsNoTracking()
+            .Where(r => shelterIds.Contains(r.ShelterId))
+            .GroupBy(r => r.ShelterId)
+            .Select(g => new { ShelterId = g.Key, Average = g.Average(r => (double)(int)r.Rating), Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(
+            x => x.ShelterId,
+            x => new ReviewSummary(Math.Round(x.Average, 2), x.Count));
     }
 }

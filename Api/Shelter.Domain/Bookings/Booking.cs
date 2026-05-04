@@ -1,4 +1,5 @@
 using Shelter.Domain.Common;
+using Shelter.Domain.Users;
 
 namespace Shelter.Domain.Bookings;
 
@@ -9,6 +10,7 @@ public class Booking
     public Guid Id { get; private set; }
     public Guid ShelterId { get; private set; }
     public Guid BookerId { get; private set; }
+    public User? Booker { get; private set; }
 
     public DateTimeOffset StartUtc { get; private set; }
     public DateTimeOffset EndUtc { get; private set; }

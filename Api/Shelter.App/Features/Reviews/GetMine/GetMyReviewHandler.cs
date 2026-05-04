@@ -15,6 +15,7 @@ public sealed class GetMyReviewHandler(IShelterDbContext db, IFileStorage storag
     {
         var review = await db.Reviews
             .AsNoTracking()
+            .Include(r => r.Reviewer)
             .Include(r => r.Pictures)
                 .ThenInclude(p => p.Asset)
             .FirstOrDefaultAsync(r => r.ShelterId == shelterId && r.ReviewerId == userId, cancellationToken)

@@ -1,4 +1,5 @@
 using App.Common;
+using App.Features.Reviews.Shared;
 using Shelter.Domain.Shelters;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
@@ -16,9 +17,13 @@ public record ShelterDetailResponse(
     bool IsActive,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
-    List<PictureResponse> Pictures)
+    List<PictureResponse> Pictures,
+    ReviewSummary ReviewSummary)
 {
-    public static ShelterDetailResponse FromDomain(ShelterEntity shelter, IFileStorage storage) => new(
+    public static ShelterDetailResponse FromDomain(
+        ShelterEntity shelter,
+        IFileStorage storage,
+        ReviewSummary reviewSummary) => new(
         shelter.Id,
         shelter.OwnerId,
         shelter.Name,
@@ -33,5 +38,6 @@ public record ShelterDetailResponse(
         shelter.Pictures
             .OrderBy(p => p.SortOrder)
             .Select(p => new PictureResponse(p.Id, storage.GetPublicUrl(p.Asset.BlobKey), p.Caption, p.SortOrder))
-            .ToList());
+            .ToList(),
+        reviewSummary);
 }

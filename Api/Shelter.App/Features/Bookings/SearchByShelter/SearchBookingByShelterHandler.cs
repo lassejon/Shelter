@@ -23,6 +23,7 @@ public sealed class SearchBookingByShelterHandler(IShelterDbContext db)
 
         var query = db.Bookings
             .AsNoTracking()
+            .Include(b => b.Booker)
             .Where(b => b.ShelterId == shelterId);
 
         if (request.From.HasValue)

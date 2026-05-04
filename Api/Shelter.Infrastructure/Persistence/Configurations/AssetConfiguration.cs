@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shelter.Domain.Assets;
+using Shelter.Domain.Users;
 
 namespace Shelter.Infrastructure.Persistence.Configurations;
 
@@ -24,6 +25,11 @@ public sealed class AssetConfiguration : IEntityTypeConfiguration<Asset>
             .HasMaxLength(200);
 
         builder.Property(a => a.CreatedAt);
+
+        builder.HasOne(a => a.UploadedBy)
+            .WithMany()
+            .HasForeignKey(a => a.UploadedById)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(a => a.BlobKey).IsUnique();
     }

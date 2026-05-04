@@ -1,4 +1,5 @@
 using Shelter.Domain.Common;
+using Shelter.Domain.Users;
 
 namespace Shelter.Domain.Assets;
 
@@ -8,6 +9,7 @@ public class Asset
 
     public Guid Id { get; private set; }
     public Guid UploadedById { get; private set; }
+    public User? UploadedBy { get; private set; }
 
     public string BlobKey { get; private set; } = null!;
     public string ContentType { get; private set; } = null!;

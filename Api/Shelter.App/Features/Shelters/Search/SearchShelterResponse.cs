@@ -19,7 +19,10 @@ public record SearchShelterResponse(
 {
     private const int MaxPicturesInSearch = 2;
 
-    public static SearchShelterResponse FromDomain(ShelterEntity shelter, IFileStorage storage) => new(
+    public static SearchShelterResponse FromDomain(
+        ShelterEntity shelter,
+        IFileStorage storage,
+        ReviewSummary reviewSummary) => new(
         shelter.Id,
         shelter.Name,
         shelter.Description,
@@ -33,6 +36,5 @@ public record SearchShelterResponse(
             .Take(MaxPicturesInSearch)
             .Select(p => new PictureResponse(p.Id, storage.GetPublicUrl(p.Asset.BlobKey), p.Caption, p.SortOrder))
             .ToList(),
-        // TODO: project per-shelter ReviewSummary in SearchShelterHandler in search response.
-        ReviewSummary.Empty);
+        reviewSummary);
 }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Shelter.Domain.Users;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
 namespace Shelter.Infrastructure.Persistence.Configurations;
@@ -43,5 +44,10 @@ public sealed class ShelterConfiguration : IEntityTypeConfiguration<ShelterEntit
         builder.Navigation(s => s.Pictures)
             .HasField("_pictures")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasOne(s => s.Owner)
+            .WithMany()
+            .HasForeignKey(s => s.OwnerId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

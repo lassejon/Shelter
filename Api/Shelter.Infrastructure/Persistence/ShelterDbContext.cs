@@ -1,14 +1,17 @@
 using App.Persistence;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Shelter.Domain.Assets;
 using Shelter.Domain.Bookings;
 using Shelter.Domain.Reviews;
+using Shelter.Domain.Users;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
 namespace Shelter.Infrastructure.Persistence;
 
 public sealed class ShelterDbContext(DbContextOptions<ShelterDbContext> options)
-    : DbContext(options), IShelterDbContext
+    : IdentityDbContext<User, IdentityRole<Guid>, Guid>(options), IShelterDbContext
 {
     public DbSet<ShelterEntity> Shelters => Set<ShelterEntity>();
     public DbSet<Booking> Bookings => Set<Booking>();

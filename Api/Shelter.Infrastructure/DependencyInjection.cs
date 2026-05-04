@@ -1,9 +1,11 @@
 using App.Auth;
 using App.Common;
 using App.Persistence;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Shelter.Domain.Users;
 using Shelter.Infrastructure.Auth;
 using Shelter.Infrastructure.Common;
 using Shelter.Infrastructure.Persistence;
@@ -18,13 +20,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddSettings<JwtSettings>(configuration);
-        services.AddSettings<BlobStorageSettings>(configuration);
-
         services.AddSingleton<IClock, SystemClock>();
-
-        services.AddSingleton<IUserStore, InMemoryUserStore>();
-        services.AddScoped<IJwtGenerator, JwtGenerator>();
 
         services.AddDbContext<ShelterDbContext>((sp, options) =>
         {
@@ -39,6 +35,24 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IShelterDbContext>(sp => sp.GetRequiredService<ShelterDbContext>());
+
+        // Identity is wired BEFORE JwtSettings so that AddJwtBearer (in JwtSettings.OnConfigure)
+        // can install JwtBearer as the default authenticate / challenge / forbid scheme on top
+        // of Identity's cookie schemes. AddIdentity's cookie schemes stay registered but unused
+        // — we authenticate via Bearer tokens only.
+        services.Configure<IdentityOptions>(options =>
+        {
+            options.User.RequireUniqueEmail = true;
+        });
+        services.AddIdentity<User, IdentityRole<Guid>>()
+            .AddEntityFrameworkStores<ShelterDbContext>()
+            .AddDefaultTokenProviders();
+
+        services.AddSettings<JwtSettings>(configuration);
+        services.AddSettings<BlobStorageSettings>(configuration);
+        services.AddSettings<CorsSettings>(configuration);
+
+        services.AddScoped<IJwtGenerator, JwtGenerator>();
 
         return services;
     }

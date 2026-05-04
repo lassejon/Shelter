@@ -1,4 +1,5 @@
 using Shelter.Domain.Common;
+using Shelter.Domain.Users;
 
 namespace Shelter.Domain.Reviews;
 
@@ -11,6 +12,7 @@ public class Review
     public Guid Id { get; private set; }
     public Guid ShelterId { get; private set; }
     public Guid ReviewerId { get; private set; }
+    public User? Reviewer { get; private set; }
 
     public Rating Rating { get; private set; }
     public string? Comment { get; private set; }

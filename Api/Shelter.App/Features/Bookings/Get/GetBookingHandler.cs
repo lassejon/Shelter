@@ -13,6 +13,7 @@ public sealed class GetBookingHandler(IShelterDbContext db)
         CancellationToken cancellationToken)
     {
         var booking = await db.Bookings
+            .Include(b => b.Booker)
             .FirstOrDefaultAsync(b => b.Id == id, cancellationToken)
             ?? throw new DomainNotFoundException($"Booking {id} was not found.");
 

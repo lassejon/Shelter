@@ -1,5 +1,6 @@
 using Shelter.Domain.Bookings;
 using Shelter.Domain.Common;
+using Shelter.Domain.Users;
 
 namespace Shelter.Domain.Shelters;
 
@@ -11,6 +12,7 @@ public class Shelter
 
     public Guid Id { get; private set; }
     public Guid OwnerId { get; private set; }
+    public User? Owner { get; private set; }
 
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }

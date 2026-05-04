@@ -1,4 +1,5 @@
 using App.Common;
+using App.Features.Reviews.Shared;
 using App.Features.Shelters.Shared;
 using App.Persistence;
 using Shelter.Domain.Assets;
@@ -44,7 +45,8 @@ public sealed class CreateShelterHandler(
             "Created shelter {ShelterId} for owner {OwnerId} with {PictureCount} pictures",
             shelter.Id, shelter.OwnerId, shelter.Pictures.Count);
 
-        return ShelterDetailResponse.FromDomain(shelter, storage);
+        // Newly created — no reviews yet.
+        return ShelterDetailResponse.FromDomain(shelter, storage, ReviewSummary.Empty);
     }
 
     private async Task<Asset> UploadAsync(

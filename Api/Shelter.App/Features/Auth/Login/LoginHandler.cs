@@ -1,10 +1,12 @@
 using App.Auth;
 using App.Features.Auth.Shared;
+using Microsoft.AspNetCore.Identity;
+using Shelter.Domain.Users;
 
 namespace App.Features.Auth.Login;
 
 public sealed class LoginHandler(
-    IUserStore userStore,
+    UserManager<User> userManager,
     IJwtGenerator jwtGenerator,
     ILogger<LoginHandler> logger)
 {
@@ -12,24 +14,25 @@ public sealed class LoginHandler(
         LoginRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await userStore.FindByEmailAsync(request.Email, cancellationToken);
+        var user = await userManager.FindByEmailAsync(request.Email);
 
-        if (user is null || !string.Equals(user.Password, request.Password, StringComparison.Ordinal))
+        if (user is null || !await userManager.CheckPasswordAsync(user, request.Password))
         {
             logger.LogInformation("Login failed for {Email}", request.Email);
             return null;
         }
 
-        var (token, expiresAtUtc) = jwtGenerator.GenerateToken(user.Id, user.Email, user.Roles);
+        var roles = (await userManager.GetRolesAsync(user)).ToList();
+        var (token, expiresAtUtc) = jwtGenerator.GenerateToken(user.Id, user.Email!, roles);
 
         logger.LogInformation("Login succeeded for {UserId}", user.Id);
 
         return new AuthResponse(
             user.Id,
-            user.Email,
+            user.Email!,
             user.FirstName,
             user.LastName,
-            user.Roles,
+            roles,
             token,
             expiresAtUtc);
     }

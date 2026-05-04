@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shelter.Domain.Reviews;
+using Shelter.Domain.Users;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
 namespace Shelter.Infrastructure.Persistence.Configurations;
@@ -31,6 +32,11 @@ public sealed class ReviewConfiguration : IEntityTypeConfiguration<Review>
             .WithMany()
             .HasForeignKey(r => r.ShelterId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(r => r.Reviewer)
+            .WithMany()
+            .HasForeignKey(r => r.ReviewerId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(r => r.Pictures)
             .WithOne()

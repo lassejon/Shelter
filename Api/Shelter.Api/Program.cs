@@ -6,7 +6,9 @@ using Shelter.Api.Features.Bookings;
 using Shelter.Api.Features.Reviews;
 using Shelter.Api.Features.Shelters;
 using Shelter.Infrastructure;
+using Shelter.Infrastructure.Configuration;
 using Shelter.Infrastructure.Persistence;
+using Shelter.Infrastructure.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +35,8 @@ if (app.Environment.IsDevelopment())
         await db.Database.MigrateAsync();
     }
 
+    await app.Services.SeedRolesAsync();
+
     app.MapOpenApi();
     app.UseSwaggerUI(o =>
     {
@@ -42,6 +46,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// CORS must be applied before Authentication so preflight (OPTIONS) requests
+// are answered without authentication.
+app.UseCors(CorsSettings.PolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();

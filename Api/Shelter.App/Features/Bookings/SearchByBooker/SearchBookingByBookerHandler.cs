@@ -14,6 +14,7 @@ public sealed class SearchBookingByBookerHandler(IShelterDbContext db)
     {
         var query = db.Bookings
             .AsNoTracking()
+            .Include(b => b.Booker)
             .Where(b => b.BookerId == userId);
 
         if (!request.IncludeHistory)
