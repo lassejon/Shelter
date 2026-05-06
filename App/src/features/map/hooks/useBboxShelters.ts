@@ -9,9 +9,10 @@ interface UseBboxSheltersOptions {
     minCapacity?: number | null;
     maxCapacity?: number | null;
   };
-  /** Number of guests; raises the effective minimum capacity. */
+  /** Party size for the desired booking. Raises the capacity floor; combined with `dates`, drives the
+   *  per-shelter availability check on the API (peak concurrent inclusive guests + party ≤ capacity). */
   guests?: number | null;
-  /** When both set, the API excludes shelters with overlapping non-cancelled bookings. */
+  /** When both set, the API filters by date availability — see `guests` for the semantic. */
   dates?: { start: Date | null; end: Date | null };
   enabled?: boolean;
 }
@@ -23,14 +24,6 @@ export function useBboxShelters({
   dates,
   enabled = true,
 }: UseBboxSheltersOptions) {
-  // Effective minCapacity: at minimum the requested guest count, but the explicit filter
-  // wins when it's stricter. ⌐ both null  → undefined.
-  const explicitMin = filters.minCapacity ?? null;
-  const effectiveMinCapacity =
-    explicitMin !== null && guests !== null
-      ? Math.max(explicitMin, guests)
-      : (explicitMin ?? guests ?? undefined);
-
   const datesValid = !!(dates?.start && dates?.end && dates.end > dates.start);
 
   const criteria = bbox
@@ -40,8 +33,9 @@ export function useBboxShelters({
         minLongitude: bbox.minLongitude,
         maxLongitude: bbox.maxLongitude,
         minRating: filters.minRating ?? undefined,
-        minCapacity: effectiveMinCapacity ?? undefined,
+        minCapacity: filters.minCapacity ?? undefined,
         maxCapacity: filters.maxCapacity ?? undefined,
+        guests: guests ?? undefined,
         startUtc: datesValid ? dates!.start!.toISOString() : undefined,
         endUtc: datesValid ? dates!.end!.toISOString() : undefined,
       }

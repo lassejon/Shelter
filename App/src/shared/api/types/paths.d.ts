@@ -607,6 +607,7 @@ export interface operations {
                 MinRating?: number | string;
                 MinCapacity?: number | string;
                 MaxCapacity?: number | string;
+                Guests?: number | string;
                 StartUtc?: string;
                 EndUtc?: string;
             };

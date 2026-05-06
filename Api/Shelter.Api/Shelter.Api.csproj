@@ -29,4 +29,14 @@
       <ProjectReference Include="..\Shelter.Infrastructure\Shelter.Infrastructure.csproj" />
     </ItemGroup>
 
+    <!--
+      Re-run GenerateOpenApiDocuments AFTER Build so the emitted JSON reflects the current build's dll.
+      The package's stock _GenerateOpenApiDocuments hooks BeforeTargets="Build", which runs against the
+      previous build's dll and leaves the JSON one build behind.
+    -->
+    <Target Name="GenerateOpenApiDocumentsAfterBuild"
+            AfterTargets="Build"
+            Condition=" '$(OpenApiGenerateDocumentsOnBuild)' == 'true' AND ('$(TargetFramework)' == '' OR '$(TargetFrameworks)' == '') "
+            DependsOnTargets="GenerateOpenApiDocuments" />
+
 </Project>

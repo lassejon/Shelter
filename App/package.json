@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "gen:api": "NODE_TLS_REJECT_UNAUTHORIZED=0 openapi-typescript https://localhost:44330/openapi/v1.json -o src/shared/api/types/paths.d.ts"
+    "gen:api": "openapi-typescript ../Api/openapi/Shelter.Api.json -o src/shared/api/types/paths.d.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -4,6 +4,7 @@ using App.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Shelter.Domain.Bookings;
 using Shelter.Domain.Common;
+using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
 namespace App.Features.Shelters.Search;
 
@@ -26,8 +27,11 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
                 s.Longitude <= request.MaxLongitude.Value);
         }
 
-        if (request.MinCapacity.HasValue)
-            query = query.Where(s => s.Capacity >= request.MinCapacity.Value);
+        // Capacity floor: the explicit MinCapacity filter, raised by Guests if larger. Guests beyond total
+        // capacity can never fit, so this prefilter saves the per-shelter availability work below.
+        var capacityFloor = Math.Max(request.MinCapacity ?? 0, request.Guests ?? 0);
+        if (capacityFloor > 0)
+            query = query.Where(s => s.Capacity >= capacityFloor);
 
         if (request.MaxCapacity.HasValue)
             query = query.Where(s => s.Capacity <= request.MaxCapacity.Value);
@@ -44,23 +48,6 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
                 db.Reviews.Where(r => r.ShelterId == s.Id).Average(r => (double)(int)r.Rating) >= minRating);
         }
 
-        // Date availability: when both StartUtc and EndUtc are set, exclude shelters with any overlapping
-        // non-cancelled booking. Standard interval-overlap test: existing.Start < requested.End && existing.End > requested.Start.
-        if (request is { StartUtc: not null, EndUtc: not null })
-        {
-            if (request.EndUtc.Value <= request.StartUtc.Value)
-                throw new DomainValidationException("EndUtc must be after StartUtc.");
-
-            var startUtc = request.StartUtc.Value;
-            var endUtc = request.EndUtc.Value;
-
-            query = query.Where(s => !db.Bookings.Any(b =>
-                b.ShelterId == s.Id &&
-                b.Status != BookingStatus.Cancelled &&
-                b.StartUtc < endUtc &&
-                b.EndUtc > startUtc));
-        }
-
         query = query.OrderBy(s => s.Name);
 
         if (request.Limit is > 0)
@@ -71,10 +58,74 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
                 .ThenInclude(p => p.Asset)
             .ToListAsync(cancellationToken);
 
+        // Date availability: when both StartUtc and EndUtc are set, drop shelters that don't have remaining
+        // capacity for the requested party at every moment in [StartUtc, EndUtc). Done in-memory because the
+        // sweepline (peak concurrent inclusive guests + exclusive overlap blocks) is awkward to express in SQL.
+        if (request is { StartUtc: not null, EndUtc: not null })
+        {
+            if (request.EndUtc.Value <= request.StartUtc.Value)
+                throw new DomainValidationException("EndUtc must be after StartUtc.");
+
+            shelters = await FilterByAvailabilityAsync(
+                shelters,
+                request.StartUtc.Value,
+                request.EndUtc.Value,
+                request.Guests ?? 1,
+                cancellationToken);
+        }
+
         var summaries = await BuildSummariesAsync(shelters.Select(s => s.Id).ToList(), cancellationToken);
 
         return shelters
             .Select(s => SearchShelterResponse.FromDomain(s, storage, summaries.GetValueOrDefault(s.Id, ReviewSummary.Empty)))
+            .ToList();
+    }
+
+    private async Task<List<ShelterEntity>> FilterByAvailabilityAsync(
+        List<ShelterEntity> shelters,
+        DateTimeOffset startUtc,
+        DateTimeOffset endUtc,
+        int requestedGuests,
+        CancellationToken cancellationToken)
+    {
+        if (shelters.Count == 0) return shelters;
+
+        var shelterIds = shelters.Select(s => s.Id).ToList();
+        var bookings = await db.Bookings
+            .AsNoTracking()
+            .Where(b =>
+                shelterIds.Contains(b.ShelterId) &&
+                b.Status != BookingStatus.Cancelled &&
+                b.StartUtc < endUtc &&
+                b.EndUtc > startUtc)
+            .Select(b => new { b.ShelterId, b.StartUtc, b.EndUtc, b.Guests, b.Type })
+            .ToListAsync(cancellationToken);
+
+        var bookingsByShelter = bookings.ToLookup(b => b.ShelterId);
+
+        return shelters
+            .Where(s =>
+            {
+                var shelterBookings = bookingsByShelter[s.Id].ToList();
+                // Any overlapping exclusive booking blocks the entire shelter for the window.
+                if (shelterBookings.Any(b => b.Type == BookingType.Exclusive)) return false;
+
+                // Inclusive bookings share capacity. Peak concurrent inclusive guests must leave room for the
+                // requested party. Sweepline: peak can only occur at a candidate moment in {startUtc} ∪ {b.Start
+                // for b in overlapping bookings, clamped to the requested window}.
+                if (shelterBookings.Count == 0) return s.Capacity >= requestedGuests;
+
+                var candidates = new List<DateTimeOffset> { startUtc };
+                candidates.AddRange(shelterBookings
+                    .Select(b => b.StartUtc)
+                    .Where(t => t > startUtc && t < endUtc));
+
+                var peak = candidates.Max(t => shelterBookings
+                    .Where(b => b.StartUtc <= t && t < b.EndUtc)
+                    .Sum(b => b.Guests));
+
+                return s.Capacity - peak >= requestedGuests;
+            })
             .ToList();
     }
 

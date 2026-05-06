@@ -12,8 +12,17 @@ public class SearchShelterRequest
     public int? MaxCapacity { get; set; }
 
     /// <summary>
-    /// Start of the desired booking window (inclusive). When both StartUtc and EndUtc are set, shelters with any
-    /// overlapping non-cancelled booking are excluded from the result set.
+    /// Number of guests for the desired booking window. Combined with StartUtc/EndUtc, shelters are filtered
+    /// by *remaining* availability rather than by overlap alone: a partially booked inclusive shelter still
+    /// matches as long as Capacity − peakConcurrentBookedGuests ≥ Guests at every moment in the window.
+    /// Independently of dates, it raises the effective minimum capacity (Capacity ≥ Guests) so shelters that
+    /// can never fit the party are excluded up front.
+    /// </summary>
+    public int? Guests { get; set; }
+
+    /// <summary>
+    /// Start of the desired booking window (inclusive). When both StartUtc and EndUtc are set the handler
+    /// filters by date availability — see <see cref="Guests"/> for the semantics.
     /// </summary>
     public DateTimeOffset? StartUtc { get; set; }
 

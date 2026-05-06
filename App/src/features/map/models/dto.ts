@@ -14,6 +14,7 @@ export interface SearchSheltersCriteria extends BoundingBox {
   minRating?: number;
   minCapacity?: number;
   maxCapacity?: number;
+  guests?: number;
   startUtc?: string;
   endUtc?: string;
 }
