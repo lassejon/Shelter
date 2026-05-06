@@ -10,7 +10,7 @@ export default function App() {
       <QueryProvider>
         <SessionRefresh />
         <Router />
-        <Toaster richColors position="top-right" />
+        <Toaster richColors position="top-right" closeButton />
       </QueryProvider>
     </ErrorBoundary>
   );

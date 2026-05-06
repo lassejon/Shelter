@@ -3,9 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
-import { Button } from '@/shared/ui/Button';
-import { Input } from '@/shared/ui/Input';
-import { Field } from '@/shared/ui/Field';
 import { useRegister } from '@/features/auth/hooks/useRegister';
 import { registerSchema, type RegisterInput } from '@/features/auth/models/register.schema';
 import type { RegisterErrorBody } from '@/features/auth/models/dto';
@@ -13,6 +10,9 @@ import type { RegisterErrorBody } from '@/features/auth/models/dto';
 interface RegisterFormProps {
   onSuccess: () => void;
 }
+
+const inputBase =
+  'w-full rounded-md border border-slate-300 px-3 py-2 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed';
 
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const {
@@ -41,9 +41,10 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           return;
         }
         if (error.response.status === 400) {
-          const list = Array.isArray(data?.errors) && data.errors.length > 0
-            ? data.errors
-            : [data?.detail ?? 'Registration failed.'];
+          const list =
+            Array.isArray(data?.errors) && data.errors.length > 0
+              ? data.errors
+              : [data?.detail ?? 'Registration failed.'];
           setServerErrors(list);
           return;
         }
@@ -52,10 +53,12 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     }
   });
 
+  const isPending = isSubmitting || registerMutation.isPending;
+
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       {serverErrors.length > 0 && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-3">
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2">
           <ul className="list-disc space-y-1 pl-4 text-xs text-red-700">
             {serverErrors.map((message, i) => (
               <li key={i}>{message}</li>
@@ -64,65 +67,75 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         </div>
       )}
       <div className="grid grid-cols-2 gap-2">
-        <Field label="First name" required error={errors.firstName?.message}>
-          {({ id, 'aria-describedby': describedBy }) => (
-            <Input
-              id={id}
-              autoComplete="given-name"
-              invalid={Boolean(errors.firstName)}
-              aria-describedby={describedBy}
-              {...register('firstName')}
-            />
+        <div>
+          <input
+            type="text"
+            placeholder="First name"
+            autoComplete="given-name"
+            disabled={isPending}
+            className={inputBase}
+            {...register('firstName')}
+          />
+          {errors.firstName?.message && (
+            <p className="mt-1 text-xs text-red-600">{errors.firstName.message}</p>
           )}
-        </Field>
-        <Field label="Last name" required error={errors.lastName?.message}>
-          {({ id, 'aria-describedby': describedBy }) => (
-            <Input
-              id={id}
-              autoComplete="family-name"
-              invalid={Boolean(errors.lastName)}
-              aria-describedby={describedBy}
-              {...register('lastName')}
-            />
+        </div>
+        <div>
+          <input
+            type="text"
+            placeholder="Last name"
+            autoComplete="family-name"
+            disabled={isPending}
+            className={inputBase}
+            {...register('lastName')}
+          />
+          {errors.lastName?.message && (
+            <p className="mt-1 text-xs text-red-600">{errors.lastName.message}</p>
           )}
-        </Field>
+        </div>
       </div>
-      <Field label="Email" required error={errors.email?.message}>
-        {({ id, 'aria-describedby': describedBy }) => (
-          <Input
-            id={id}
-            type="email"
-            autoComplete="email"
-            invalid={Boolean(errors.email)}
-            aria-describedby={describedBy}
-            {...register('email')}
-          />
+      <div>
+        <input
+          type="email"
+          placeholder="Email"
+          autoComplete="email"
+          disabled={isPending}
+          className={inputBase}
+          {...register('email')}
+        />
+        {errors.email?.message && (
+          <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
         )}
-      </Field>
-      <Field label="Password" required error={errors.password?.message}>
-        {({ id, 'aria-describedby': describedBy }) => (
-          <Input
-            id={id}
-            type="password"
-            autoComplete="new-password"
-            invalid={Boolean(errors.password)}
-            aria-describedby={describedBy}
-            {...register('password')}
-          />
+      </div>
+      <div>
+        <input
+          type="password"
+          placeholder="Password"
+          autoComplete="new-password"
+          disabled={isPending}
+          className={inputBase}
+          {...register('password')}
+        />
+        {errors.password?.message && (
+          <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
         )}
-      </Field>
-      <label className="flex items-center gap-2 text-sm text-slate-700">
-        <input type="checkbox" {...register('isShelterOwner')} className="h-4 w-4" />
+      </div>
+      <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          disabled={isPending}
+          className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
+          {...register('isShelterOwner')}
+        />
         Register as a shelter owner
       </label>
-      <Button
+      <button
         type="submit"
-        variant="primary"
-        fullWidth
-        disabled={isSubmitting || registerMutation.isPending}
+        disabled={isPending}
+        className="w-full rounded-md bg-primary-600 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {isSubmitting || registerMutation.isPending ? 'Creating account…' : 'Create account'}
-      </Button>
+        {isPending ? 'Creating account…' : 'Create account'}
+      </button>
     </form>
   );
 }

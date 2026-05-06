@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router';
+import { Calendar, Menu, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { Button } from '@/shared/ui/Button';
-import { Input } from '@/shared/ui/Input';
-import { Field } from '@/shared/ui/Field';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { useLogin } from '@/features/auth/hooks/useLogin';
 import { useLogout } from '@/features/auth/hooks/useLogout';
@@ -15,15 +14,12 @@ type Mode = 'login' | 'register';
 
 export function LoginDropdown() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const displayName = useAuthStore((state) =>
-    [state.firstName, state.lastName].filter(Boolean).join(' ') || state.email,
-  );
+  const firstName = useAuthStore((state) => state.firstName);
+  const email = useAuthStore((state) => state.email);
 
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>('login');
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const logoutMutation = useLogout();
 
   useEffect(() => {
     if (!open) return;
@@ -36,57 +32,41 @@ export function LoginDropdown() {
     return () => document.removeEventListener('mousedown', onClick);
   }, [open]);
 
-  if (isAuthenticated) {
-    return (
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-slate-700">{displayName}</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => logoutMutation.mutate()}
-          disabled={logoutMutation.isPending}
-        >
-          {logoutMutation.isPending ? 'Logging out…' : 'Log out'}
-        </Button>
-      </div>
-    );
-  }
+  const initials = (firstName ?? email ?? '').slice(0, 1).toUpperCase();
+  const greeting = firstName ?? email;
 
   return (
     <div ref={containerRef} className="relative">
-      <Button variant="primary" size="sm" onClick={() => setOpen((v) => !v)}>
-        Sign in
-      </Button>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-slate-100"
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        {isAuthenticated && initials ? (
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-sm font-semibold text-white">
+            {initials}
+          </span>
+        ) : (
+          <User size={20} className="text-slate-600" />
+        )}
+        <Menu size={20} className="text-slate-600" />
+      </button>
+
       {open && (
-        <div className="absolute right-0 mt-2 w-80 rounded-lg border border-slate-200 bg-white p-4 shadow-lg z-50">
-          <div className="mb-3 flex gap-2 text-sm">
-            <button
-              type="button"
-              className={
-                mode === 'login'
-                  ? 'font-semibold text-slate-900 underline underline-offset-4'
-                  : 'text-slate-500 hover:text-slate-700'
-              }
-              onClick={() => setMode('login')}
-            >
-              Log in
-            </button>
-            <button
-              type="button"
-              className={
-                mode === 'register'
-                  ? 'font-semibold text-slate-900 underline underline-offset-4'
-                  : 'text-slate-500 hover:text-slate-700'
-              }
-              onClick={() => setMode('register')}
-            >
-              Register
-            </button>
-          </div>
-          {mode === 'login' ? (
-            <LoginForm onSuccess={() => setOpen(false)} />
+        <div
+          role="menu"
+          className="absolute right-0 z-50 mt-2 min-w-[280px] rounded-lg border border-slate-200 bg-white p-4 shadow-xl"
+        >
+          {isAuthenticated ? (
+            <AuthenticatedMenu greeting={greeting} onClose={() => setOpen(false)} />
           ) : (
-            <RegisterForm onSuccess={() => setOpen(false)} />
+            <UnauthenticatedMenu
+              mode={mode}
+              setMode={setMode}
+              onSuccess={() => setOpen(false)}
+            />
           )}
         </div>
       )}
@@ -94,65 +74,159 @@ export function LoginDropdown() {
   );
 }
 
-interface LoginFormProps {
-  onSuccess: () => void;
+function AuthenticatedMenu({
+  greeting,
+  onClose,
+}: {
+  greeting: string | null;
+  onClose: () => void;
+}) {
+  const logoutMutation = useLogout();
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-slate-600">Hello, {greeting}</p>
+      <div className="border-t border-slate-200" />
+      <Link
+        to="/settings/bookings"
+        onClick={onClose}
+        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100"
+      >
+        <Calendar size={16} />
+        <span>My Bookings</span>
+      </Link>
+      <Link
+        to="/settings/account"
+        onClick={onClose}
+        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100"
+      >
+        <User size={16} />
+        <span>Account Settings</span>
+      </Link>
+      <div className="border-t border-slate-200" />
+      <button
+        type="button"
+        onClick={() => {
+          logoutMutation.mutate();
+          onClose();
+        }}
+        disabled={logoutMutation.isPending}
+        className="w-full rounded-md px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
+      >
+        {logoutMutation.isPending ? 'Logging out…' : 'Logout'}
+      </button>
+    </div>
+  );
 }
 
-function LoginForm({ onSuccess }: LoginFormProps) {
+function UnauthenticatedMenu({
+  mode,
+  setMode,
+  onSuccess,
+}: {
+  mode: Mode;
+  setMode: (m: Mode) => void;
+  onSuccess: () => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-3 text-sm">
+        <button
+          type="button"
+          className={
+            mode === 'login'
+              ? 'font-semibold text-slate-900 underline underline-offset-4'
+              : 'text-slate-500 transition-colors hover:text-slate-700'
+          }
+          onClick={() => setMode('login')}
+        >
+          Login
+        </button>
+        <button
+          type="button"
+          className={
+            mode === 'register'
+              ? 'font-semibold text-slate-900 underline underline-offset-4'
+              : 'text-slate-500 transition-colors hover:text-slate-700'
+          }
+          onClick={() => setMode('register')}
+        >
+          Register
+        </button>
+      </div>
+      {mode === 'login' ? (
+        <LoginForm onSuccess={onSuccess} />
+      ) : (
+        <RegisterForm onSuccess={onSuccess} />
+      )}
+    </div>
+  );
+}
+
+function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+    setError,
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   });
 
   const loginMutation = useLogin();
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const onSubmit = handleSubmit(async (values) => {
+    setServerError(null);
     try {
       await loginMutation.mutateAsync(values);
       toast.success('Logged in');
       onSuccess();
     } catch {
-      toast.error('Invalid email or password');
+      setServerError('Invalid email or password');
+      setError('password', { message: ' ' });
     }
   });
 
+  const inputBase =
+    'w-full rounded-md border border-slate-300 px-3 py-2 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed';
+
   return (
     <form onSubmit={onSubmit} className="space-y-3">
-      <Field label="Email" required error={errors.email?.message}>
-        {({ id, 'aria-describedby': describedBy }) => (
-          <Input
-            id={id}
-            type="email"
-            autoComplete="email"
-            invalid={Boolean(errors.email)}
-            aria-describedby={describedBy}
-            {...register('email')}
-          />
-        )}
-      </Field>
-      <Field label="Password" required error={errors.password?.message}>
-        {({ id, 'aria-describedby': describedBy }) => (
-          <Input
-            id={id}
-            type="password"
-            autoComplete="current-password"
-            invalid={Boolean(errors.password)}
-            aria-describedby={describedBy}
-            {...register('password')}
-          />
-        )}
-      </Field>
-      <Button
-        type="submit"
-        variant="primary"
-        fullWidth
+      {serverError && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {serverError}
+        </div>
+      )}
+      <input
+        type="email"
+        placeholder="Email"
+        autoComplete="email"
         disabled={isSubmitting || loginMutation.isPending}
+        className={inputBase}
+        {...register('email')}
+      />
+      {errors.email?.message && (
+        <p className="text-xs text-red-600">{errors.email.message}</p>
+      )}
+      <input
+        type="password"
+        placeholder="Password"
+        autoComplete="current-password"
+        disabled={isSubmitting || loginMutation.isPending}
+        className={inputBase}
+        {...register('password')}
+      />
+      {errors.password?.message && errors.password.message.trim() && (
+        <p className="text-xs text-red-600">{errors.password.message}</p>
+      )}
+      <button
+        type="submit"
+        disabled={isSubmitting || loginMutation.isPending}
+        className="w-full rounded-md bg-primary-600 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {isSubmitting || loginMutation.isPending ? 'Logging in…' : 'Log in'}
-      </Button>
+        {isSubmitting || loginMutation.isPending ? 'Logging in…' : 'Login'}
+      </button>
     </form>
   );
 }

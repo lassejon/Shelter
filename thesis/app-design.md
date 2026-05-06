@@ -326,6 +326,43 @@ Tailwind 4 introduced an official Vite plugin (`@tailwindcss/vite`) that superse
 
 It does **not** require `postcss.config.js`, `tailwind.config.js`, or any explicit content-glob configuration — Tailwind 4 detects classes by scanning source files automatically. The original Shelter prototype was on the PostCSS path and carried both config files; the rebuild's setup is two lines shorter and does not need a separate PostCSS layer.
 
+### Design tokens
+
+Components reference **semantic tokens** (`primary-*`, `accent-*`) rather than raw palette names (`emerald-*`, `amber-*`) so the brand colour can shift in one place without rewriting every component. Tokens are declared in a Tailwind 4 `@theme` block at the top of `src/index.css`:
+
+```css
+@theme {
+  --color-primary-50:  #ecfdf5;
+  --color-primary-500: #10b981;
+  --color-primary-600: #059669;
+  --color-primary-700: #047857;
+  /* …full 50–950 scale… */
+
+  --color-accent-50:   #fffbeb;
+  --color-accent-500:  #f59e0b;
+  /* …full scale… */
+
+  --color-page-bg:     #f8fafc;
+
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+```
+
+Tailwind 4's compiler turns each `--color-<name>-<shade>` variable into the matching utility (`bg-primary-600`, `text-primary-600`, `border-primary-600`, `ring-primary-500`, etc.), so the tokens are usable everywhere a Tailwind colour utility is. The `--color-page-bg` and `--font-sans` tokens are referenced from CSS directly (`body { background-color: var(--color-page-bg); font-family: var(--font-sans); }`).
+
+Two tokens are defined; the rest is intentionally Tailwind's built-in palette:
+
+- **`primary`** is the brand colour — used for CTAs, links, focus rings, the brand wordmark, the "active" thumbnail border, and the avatar background. Currently an emerald scale.
+- **`accent`** is reserved for emphasis colour against the brand — review stars, notifications, "new" indicators. Currently an amber scale.
+- **Slate** is used as-is for neutrals (page background, borders, body text, secondary text). It pairs well with the emerald primary and is the de-facto neutral scale across the codebase, so aliasing it as `--color-neutral-*` would add an indirection without a payoff.
+- **Red** is used as-is for destructive / error UI (logout button text, validation error messages, error banners). Same reasoning: there is one and only one "danger" hue in the design, and Tailwind's red scale is what every developer reaches for.
+
+The discipline: when a primitive or component needs the brand colour, write `bg-primary-600`, not `bg-emerald-600`. When it needs a neutral or an error colour, `bg-slate-50` and `text-red-600` are fine. The semantic alias only earns its keep where the colour might plausibly change — for the brand, it might; for neutrals and errors, it won't.
+
+Adding a new semantic token is one line in `@theme`. If a colour starts repeating across components without a semantic name (e.g. a "muted" text colour used in five places), promote it to a token. The same rule as `shared/ui/`: don't pre-create tokens in anticipation; promote on actual reuse.
+
 ---
 
 ## What is deliberately deferred
@@ -523,7 +560,7 @@ The full migration plan from the original Shelter prototype to the rebuild lives
 | 1 | Cross-cutting infrastructure: axios client, query provider, route guards, router skeleton, error boundary, UI floor |
 | 2 | Auth: store, login/register/upgrade/me APIs, login dropdown, register form |
 | 3 | Shelter detail (read-only) — validates auth + a real fetch end-to-end |
-| 4 | Map + bbox search — port the deck.gl + supercluster stack from OldShelter as-is |
+| 4 | Map + bbox search — port the deck.gl + supercluster stack from as-is |
 | 5 | Search UI rebuild (the original prototype shipped this as TODO skeletons) |
 | 6 | Owner: create shelter (multipart upload, location picker, RHF + Zod) |
 | 7 | Bookings: detail-page widget + settings list + owner per-shelter view |
