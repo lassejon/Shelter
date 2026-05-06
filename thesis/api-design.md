@@ -353,6 +353,31 @@ The same pattern is how the framework's own `EF.Functions.Like` works — its bo
 
 The pattern is overkill for one-off queries. Adopt it when the project genuinely cares about provider portability and the function name surfaces in more than one slice.
 
+##### Picking the right pg_trgm function: similarity vs word_similarity
+
+The same `[DbFunction]` stub pattern is reused for a second pg_trgm function — `word_similarity` — because a single similarity function isn't the right tool for every text-search shape. `SearchShelterHandler` actually composes both:
+
+```csharp
+query = query.Where(s =>
+    TextFunctions.TrigramSimilarity(s.Name, q) >= 0.2 ||
+    (s.Description != null &&
+        TextFunctions.TrigramWordSimilarity(q, s.Description) >= 0.5));
+```
+
+The choice is driven by the asymmetry between Name (short) and Description (potentially long), and by what each pg_trgm function actually computes:
+
+- **`similarity(a, b)`** is symmetric. It counts shared trigrams and divides by *total distinct trigrams across both strings*. That works well for short-vs-short matching: a query of `"birch"` against a shelter named `"Birch Hut"` shares most trigrams and scores ~0.5–0.7. It fails for short-vs-long matching: the same query against a description like `"A small shelter near a river in Lolland with a covered fireplace"` shares the same trigrams but is dwarfed by the description's much larger trigram set, so the score collapses to ~0.05 — well below any reasonable threshold. This is the right tool for **Name** matching.
+
+- **`word_similarity(needle, haystack)`** is asymmetric. It scans the haystack for the *highest-similarity word-bounded substring* against the entire needle, returning that score. The haystack's overall length doesn't dilute the score — only the best-matching word fragment counts. So `"fireplace"` against the description above scores ~0.7 (perfect word hit) even though `similarity()` would score it near zero. This is the right tool for **Description** matching, where the user types a feature and wants to know if any word in the description matches.
+
+The two thresholds are also calibrated differently. `similarity()` typically peaks around 0.5–0.7 for "obviously matches" cases, so 0.2 is forgiving (handles typos, prefix-of-word matches). `word_similarity()` peaks higher because it picks the best substring, so 0.5 stays selective without being so strict that single-character typos drop matches. pg_trgm's own defaults are 0.3 for `similarity_threshold` and 0.6 for `word_similarity_threshold`; both `SearchShelterHandler` thresholds are slightly looser than the defaults to favour recall in a sparse dataset.
+
+Both functions are backed by GIN indexes with the `gin_trgm_ops` operator class — `ix_shelters_name_trgm` and `ix_shelters_description_trgm`. The same index supports queries against `similarity()`, `word_similarity()`, and the `%` / `<%` operators, so a single GIN-trgm index per searched column is sufficient. Without these indexes, both functions degrade to sequential scans. They're added in two migrations (`EnableTrigramAndNameIndex`, `DescriptionTrgmIndex`) alongside `CREATE EXTENSION IF NOT EXISTS pg_trgm`.
+
+The handler ranks results by `similarity(name, q) DESC, word_similarity(q, description) DESC, name ASC`. A shelter named "Birch Hut" lists above shelters that merely mention birch in passing because its name-similarity is high (~0.7) and theirs is near zero; the description-similarity tiebreaker only fires within the same name-similarity bucket. The OR-filter combined with the dominant-name ranking gives the UX the user expects: if there's a name match, surface it; if not, fall back to feature/description hits without ever pretending a description hit is more relevant than a name hit.
+
+This is also the reason both functions exist as separate stubs rather than one. They're not interchangeable — a single `Similarity(a, b)` exposed to the handler would either lose typo-tolerance on description text (mapped to `similarity`) or produce noisy short-vs-short matches (mapped to `word_similarity`). Naming them after their pg_trgm semantics keeps the handler honest about which is which, even though the App-layer code doesn't itself depend on Postgres.
+
 #### Why no MediatR
 
 The same reasoning applies one level up. Many CQRS codebases dispatch commands and queries through a mediator — `mediator.Send(new CreateShelterCommand(...))` resolves to an `ICommandHandler<CreateShelterCommand, ShelterDetailResponse>` registered by assembly scan. The project deliberately does not use this pattern. Endpoints inject the handler class and call `handler.HandleAsync(...)` directly:

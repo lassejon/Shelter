@@ -11,11 +11,19 @@ namespace App.Features.Shelters.Search;
 public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage storage)
 {
     /// <summary>
-    /// Trigram similarity floor for the free-text Q filter. Below this the match is considered noise
-    /// and the shelter is dropped. Tuned empirically; revisit if logs show too many false positives /
-    /// negatives. pg_trgm's default is 0.3.
+    /// Trigram similarity floor for matching Q against the shelter Name (symmetric similarity,
+    /// short-vs-short). Below this, a name match is considered noise. pg_trgm's default is 0.3;
+    /// 0.2 is more forgiving for typos.
     /// </summary>
     private const double NameSimilarityThreshold = 0.2;
+
+    /// <summary>
+    /// Word-similarity floor for matching Q against the shelter Description (asymmetric, short-vs-long).
+    /// `word_similarity` scores higher than `similarity` because it measures the best matching
+    /// word-bounded substring rather than overall trigram overlap, so the threshold is set higher
+    /// to keep description hits relevant. pg_trgm's default is 0.6.
+    /// </summary>
+    private const double DescriptionSimilarityThreshold = 0.5;
 
     public async Task<IReadOnlyList<SearchShelterResponse>> HandleAsync(
         SearchShelterRequest request,
@@ -29,9 +37,15 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
         var hasNameQuery = !string.IsNullOrEmpty(trimmedQ);
         if (hasNameQuery)
         {
-            // Postgres pg_trgm: similarity(name, q) > threshold; ranking handled below.
+            // Match on Name (symmetric trigram similarity) OR Description (asymmetric word similarity).
+            // Description-only hits surface for feature queries ("water", "fireplace") that aren't in the
+            // name; ranking below puts name matches first regardless. word_similarity treats the description
+            // as a haystack and finds the best word-bounded substring vs the query, so it works on long text
+            // where plain similarity() would dilute to ~0.
             query = query.Where(s =>
-                TextFunctions.TrigramSimilarity(s.Name, trimmedQ!) >= NameSimilarityThreshold);
+                TextFunctions.TrigramSimilarity(s.Name, trimmedQ!) >= NameSimilarityThreshold ||
+                (s.Description != null &&
+                    TextFunctions.TrigramWordSimilarity(trimmedQ!, s.Description) >= DescriptionSimilarityThreshold));
         }
 
         if (request is { MinLatitude: not null, MaxLatitude: not null, MinLongitude: not null, MaxLongitude: not null })
@@ -64,8 +78,14 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
                 db.Reviews.Where(r => r.ShelterId == s.Id).Average(r => (double)(int)r.Rating) >= minRating);
         }
 
+        // Ranking: name similarity dominates so a "Birch Hut" query lists the shelter named Birch Hut
+        // above shelters that merely mention birch in passing. Description similarity is the secondary
+        // sort so ties on name break by description relevance.
         query = hasNameQuery
             ? query.OrderByDescending(s => TextFunctions.TrigramSimilarity(s.Name, trimmedQ!))
+                   .ThenByDescending(s => s.Description != null
+                       ? TextFunctions.TrigramWordSimilarity(trimmedQ!, s.Description)
+                       : 0d)
                    .ThenBy(s => s.Name)
             : query.OrderBy(s => s.Name);
 
