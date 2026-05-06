@@ -2,6 +2,7 @@ using App.Common;
 using App.Features.Reviews.Shared;
 using App.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Shelter.Domain.Bookings;
 using Shelter.Domain.Common;
 
 namespace App.Features.Shelters.Search;
@@ -41,6 +42,23 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
             query = query.Where(s =>
                 db.Reviews.Any(r => r.ShelterId == s.Id) &&
                 db.Reviews.Where(r => r.ShelterId == s.Id).Average(r => (double)(int)r.Rating) >= minRating);
+        }
+
+        // Date availability: when both StartUtc and EndUtc are set, exclude shelters with any overlapping
+        // non-cancelled booking. Standard interval-overlap test: existing.Start < requested.End && existing.End > requested.Start.
+        if (request is { StartUtc: not null, EndUtc: not null })
+        {
+            if (request.EndUtc.Value <= request.StartUtc.Value)
+                throw new DomainValidationException("EndUtc must be after StartUtc.");
+
+            var startUtc = request.StartUtc.Value;
+            var endUtc = request.EndUtc.Value;
+
+            query = query.Where(s => !db.Bookings.Any(b =>
+                b.ShelterId == s.Id &&
+                b.Status != BookingStatus.Cancelled &&
+                b.StartUtc < endUtc &&
+                b.EndUtc > startUtc));
         }
 
         query = query.OrderBy(s => s.Name);

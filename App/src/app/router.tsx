@@ -11,10 +11,12 @@ import { RoleProtectedRoute } from '@/shared/components/RoleProtectedRoute';
 import { RootLayout } from './RootLayout';
 
 const router = createBrowserRouter([
+  // Map page owns its own layout (full-screen, floating MapHeader).
+  { path: '/', element: <HomePage /> },
+  // Other routes share the standard chrome (sticky Header + main).
   {
     element: <RootLayout />,
     children: [
-      { path: '/', element: <HomePage /> },
       { path: '/shelters/:id', element: <ShelterDetailsPage /> },
       {
         path: '/shelters/create',

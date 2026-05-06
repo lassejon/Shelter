@@ -607,6 +607,8 @@ export interface operations {
                 MinRating?: number | string;
                 MinCapacity?: number | string;
                 MaxCapacity?: number | string;
+                StartUtc?: string;
+                EndUtc?: string;
             };
             header?: never;
             path?: never;
