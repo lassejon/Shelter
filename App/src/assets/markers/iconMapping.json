@@ -1,0 +1,10 @@
+{
+  "shelter": {
+    "x": 0,
+    "y": 0,
+    "width": 64,
+    "height": 64,
+    "anchorY": 61,
+    "mask": false
+  }
+}
