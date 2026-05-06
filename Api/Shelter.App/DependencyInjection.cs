@@ -1,5 +1,6 @@
 using App.Common;
 using App.Features.Auth.Login;
+using App.Features.Auth.Me;
 using App.Features.Auth.Register;
 using App.Features.Auth.UpgradeToOwner;
 using App.Features.Bookings.Cancel;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<LoginHandler>();
         services.AddScoped<RegisterHandler>();
         services.AddScoped<UpgradeToOwnerHandler>();
+        services.AddScoped<MeHandler>();
         return services;
     }
 

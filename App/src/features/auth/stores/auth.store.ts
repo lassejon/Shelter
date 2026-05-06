@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { AuthResponse } from '@/features/auth/models/dto';
 
 interface AuthState {
   userId: string | null;
@@ -13,15 +14,7 @@ interface AuthState {
 }
 
 interface AuthActions {
-  setAuth: (data: {
-    userId: string;
-    token: string;
-    email: string;
-    firstName: string | null;
-    lastName: string | null;
-    roles: string[];
-    expiresAtUtc: string;
-  }) => void;
+  setAuth: (response: AuthResponse) => void;
   logout: () => void;
 }
 
@@ -43,15 +36,15 @@ export const useAuthStore = create<AuthStore>()(
     (set) => ({
       ...defaultState,
 
-      setAuth: (data) =>
+      setAuth: (response) =>
         set({
-          userId: data.userId,
-          token: data.token,
-          email: data.email,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          roles: data.roles,
-          expiresAtUtc: data.expiresAtUtc,
+          userId: response.userId,
+          token: response.accessToken,
+          email: response.email,
+          firstName: response.firstName,
+          lastName: response.lastName,
+          roles: response.roles,
+          expiresAtUtc: response.expiresAtUtc,
           isAuthenticated: true,
         }),
 

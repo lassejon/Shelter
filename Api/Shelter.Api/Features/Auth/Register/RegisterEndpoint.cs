@@ -36,12 +36,14 @@ public static class RegisterEndpoint
 
         if (failure == RegisterFailure.InvalidPassword)
         {
-            return TypedResults.BadRequest(new ProblemDetails
+            var problem = new ProblemDetails
             {
                 Title = "Registration failed",
                 Status = StatusCodes.Status400BadRequest,
-                Detail = errors is { Count: > 0 } ? string.Join(" ", errors) : "Password did not meet the configured requirements.",
-            });
+                Detail = "The provided registration data did not meet the configured requirements.",
+            };
+            problem.Extensions["errors"] = errors ?? Array.Empty<string>();
+            return TypedResults.BadRequest(problem);
         }
 
         return TypedResults.Ok(response!);

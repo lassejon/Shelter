@@ -370,6 +370,46 @@ Two important properties of this design:
 
 Adding a new failure category — say, a 409 Conflict for duplicate shelter names — is a two-line change: a new `DomainConflictException` class and a new case in the handler's `switch`. No endpoint or handler code changes.
 
+### Multi-error responses: `extensions.errors`
+
+`ProblemDetails.Detail` is a single human-readable string, which is the right shape when a request fails for one reason. Some failures don't reduce to one reason. The clearest example is registration: ASP.NET Core Identity validates the password against several rules simultaneously (length, digit, non-alphanumeric character, uppercase, lowercase) and returns the full list of violated rules. Joining those into a single delimited string for `Detail` is lossy — the UI ends up displaying one wall of text and cannot render the rules as a bulleted list, pair them with help links, or attribute each one to a specific input.
+
+The project surfaces multi-error failures by attaching the list to `ProblemDetails.Extensions` under the key `errors`:
+
+```csharp
+var problem = new ProblemDetails
+{
+    Title = "Registration failed",
+    Status = StatusCodes.Status400BadRequest,
+    Detail = "The provided registration data did not meet the configured requirements.",
+};
+problem.Extensions["errors"] = errors;   // IReadOnlyList<string> from Identity
+return TypedResults.BadRequest(problem);
+```
+
+Wire shape:
+
+```json
+{
+  "title": "Registration failed",
+  "status": 400,
+  "detail": "The provided registration data did not meet the configured requirements.",
+  "errors": [
+    "Passwords must be at least 6 characters.",
+    "Passwords must have at least one non alphanumeric character.",
+    "Passwords must have at least one digit ('0'-'9').",
+    "Passwords must have at least one uppercase ('A'-'Z')."
+  ]
+}
+```
+
+Two implementation notes:
+
+- **`errors` is a top-level JSON property, not nested under `extensions`.** ASP.NET's `ProblemDetails.Extensions` dictionary is decorated with `[JsonExtensionData]`, so its entries are flattened to top-level JSON properties at serialisation time. The C# code reads `problem.Extensions["errors"]`, but the wire format the frontend consumes is `data.errors`. RFC 7807 explicitly permits this: any field name that is not part of the standard set (`type`, `title`, `status`, `detail`, `instance`) is a problem-type-specific extension, and `errors` is one such extension here.
+- **`Detail` stays summary-level.** It describes *what* failed in human-readable terms ("Registration failed: …"); the `errors` array carries the *individual* violated rules. Frontend code prefers `errors` when present and falls back to `Detail` when a list isn't applicable (e.g. a 409 conflict where the failure is genuinely singular).
+
+This shape is used today by `RegisterEndpoint` for Identity password-policy violations. Any future handler that needs to surface a list of validator failures should follow the same convention rather than overloading `Detail` with delimited strings or inventing a parallel field.
+
 ---
 
 ## Authentication and authorisation
