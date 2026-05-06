@@ -10,6 +10,13 @@ namespace App.Features.Shelters.Search;
 
 public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage storage)
 {
+    /// <summary>
+    /// Trigram similarity floor for the free-text Q filter. Below this the match is considered noise
+    /// and the shelter is dropped. Tuned empirically; revisit if logs show too many false positives /
+    /// negatives. pg_trgm's default is 0.3.
+    /// </summary>
+    private const double NameSimilarityThreshold = 0.2;
+
     public async Task<IReadOnlyList<SearchShelterResponse>> HandleAsync(
         SearchShelterRequest request,
         CancellationToken cancellationToken)
@@ -17,6 +24,15 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
         var query = db.Shelters
             .AsNoTracking()
             .Where(s => s.IsActive);
+
+        var trimmedQ = request.Q?.Trim();
+        var hasNameQuery = !string.IsNullOrEmpty(trimmedQ);
+        if (hasNameQuery)
+        {
+            // Postgres pg_trgm: similarity(name, q) > threshold; ranking handled below.
+            query = query.Where(s =>
+                TextFunctions.TrigramSimilarity(s.Name, trimmedQ!) >= NameSimilarityThreshold);
+        }
 
         if (request is { MinLatitude: not null, MaxLatitude: not null, MinLongitude: not null, MaxLongitude: not null })
         {
@@ -48,7 +64,10 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
                 db.Reviews.Where(r => r.ShelterId == s.Id).Average(r => (double)(int)r.Rating) >= minRating);
         }
 
-        query = query.OrderBy(s => s.Name);
+        query = hasNameQuery
+            ? query.OrderByDescending(s => TextFunctions.TrigramSimilarity(s.Name, trimmedQ!))
+                   .ThenBy(s => s.Name)
+            : query.OrderBy(s => s.Name);
 
         if (request.Limit is > 0)
             query = query.Take(request.Limit.Value);

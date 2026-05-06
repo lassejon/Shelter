@@ -12,6 +12,13 @@ public class SearchShelterRequest
     public int? MaxCapacity { get; set; }
 
     /// <summary>
+    /// Free-text query. When set, shelters are filtered by trigram similarity on
+    /// <c>Name</c> (Postgres pg_trgm) and ordered by similarity descending. Tolerates
+    /// minor typos. Composes with the bbox / capacity / rating / availability filters.
+    /// </summary>
+    public string? Q { get; set; }
+
+    /// <summary>
     /// Number of guests for the desired booking window. Combined with StartUtc/EndUtc, shelters are filtered
     /// by *remaining* availability rather than by overlap alone: a partially booked inclusive shelter still
     /// matches as long as Capacity − peakConcurrentBookedGuests ≥ Guests at every moment in the window.

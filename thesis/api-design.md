@@ -293,6 +293,66 @@ The discipline that *was* enforced by "no `UpdateAsync` on the repo" is now enfo
 
 If two handlers later end up duplicating the same non-trivial lookup, the project will introduce a narrow service for that specific lookup (e.g. `IShelterLookup` with a single method). The rule mirrors the one for shared DTOs in `Features/<Aggregate>/Shared/`: **promote on actual reuse, not in anticipation.** A two-line `db.Shelters.FindAsync(...) ?? throw new DomainNotFoundException(...)` is not duplication worth abstracting; a thirty-line filtered query that two slices both need is.
 
+#### Provider-specific SQL via mapped `[DbFunction]` stubs
+
+Some queries need a database-vendor-specific SQL function — Postgres' `pg_trgm` `similarity()` for fuzzy name search is the example used by `SearchShelterHandler`. The naive way is to import an EF Core provider extension into the App layer (`EF.Functions.TrigramsSimilarity(...)` from `Npgsql.EntityFrameworkCore.PostgreSQL`). That works, but it pins App to a single database vendor — a regression for a layer that is otherwise provider-agnostic.
+
+The project keeps App provider-agnostic by declaring a stub static method that's mapped to the SQL function in the Infrastructure layer:
+
+```csharp
+// Shelter.App/Persistence/TextFunctions.cs
+namespace App.Persistence;
+
+public static class TextFunctions
+{
+    public static double TrigramSimilarity(string a, string b)
+        => throw new InvalidOperationException(
+            "TrigramSimilarity can only be used inside a LINQ query against IShelterDbContext.");
+}
+```
+
+```csharp
+// Shelter.Infrastructure/Persistence/ShelterDbContext.OnModelCreating
+modelBuilder
+    .HasDbFunction(typeof(TextFunctions).GetMethod(nameof(TextFunctions.TrigramSimilarity))!)
+    .HasName("similarity");
+```
+
+```csharp
+// Shelter.App/Features/Shelters/Search/SearchShelterHandler.cs
+query = query
+    .Where(s => TextFunctions.TrigramSimilarity(s.Name, q) >= 0.2)
+    .OrderByDescending(s => TextFunctions.TrigramSimilarity(s.Name, q));
+```
+
+The arrangement looks paradoxical — `TextFunctions.TrigramSimilarity` always throws, yet handlers call it freely — and the mechanics are worth understanding because the same pattern recurs (`EF.Functions.Like`, `EF.Functions.Random`, custom user-defined functions, `Microsoft.EntityFrameworkCore.NpgsqlDbFunctionsExtensions.ILike`, etc.).
+
+**The body never runs when used inside a `IQueryable<T>` chain.** Because `db.Shelters` is `IQueryable<Shelter>` rather than `IEnumerable<Shelter>`, the C# compiler captures the lambda passed to `.Where`/`.OrderByDescending` as an `Expression<Func<Shelter, …>>` — a runtime data structure describing the lambda's *shape*, not a delegate that executes it. EF Core's query pipeline walks that expression tree before the query is sent to the database. When it encounters a `MethodCallExpression` for a method registered via `HasDbFunction`, it substitutes the SQL function name from the registration. The C# method body is never invoked; it exists only so the compiler accepts the call site and produces an expression tree node referring to the right `MethodInfo`.
+
+The query EF emits is exactly:
+
+```sql
+SELECT … FROM "Shelters" AS s
+WHERE similarity(s."Name", @__q_0) >= 0.2
+ORDER BY similarity(s."Name", @__q_0) DESC
+```
+
+The throw is a guardrail for the *other* path. If a developer accidentally calls `TextFunctions.TrigramSimilarity("foo", "bar")` outside a queryable — in a unit test, in a `.ToList()`'d collection's `.OrderBy(...)`, in plain in-memory C# — there is no expression tree to walk, the method runs as ordinary code, and a silent default like `0.0` would be a nasty correctness bug. Throwing makes misuse immediately obvious.
+
+The mental model:
+
+| | `IQueryable<T>` | `IEnumerable<T>` |
+| --- | --- | --- |
+| Lambda becomes | `Expression<Func<…>>` (data) | `Func<…>` (delegate) |
+| Method bodies | not executed; EF translates the expression tree to SQL | executed normally |
+| `TextFunctions.TrigramSimilarity` | rewritten to `similarity(...)` | throws (correct: misuse) |
+
+The same pattern is how the framework's own `EF.Functions.Like` works — its body is similarly a throw, and EF replaces calls to it with `LIKE` in the generated SQL.
+
+**Why this layer split is worth the extra file.** The alternative — pulling `Npgsql.EntityFrameworkCore.PostgreSQL` into `Shelter.App.csproj` so handlers can write `EF.Functions.TrigramsSimilarity(...)` directly — also works but binds the App layer to Postgres. The stub-and-map pattern keeps the architectural one-way reference clean: App declares a method named in domain terms (`TrigramSimilarity`); Infrastructure decides which SQL function to bind it to (`similarity` today, could be `SOUNDEX`-or-equivalent on a different provider, or another function name on a future migration). The Postgres-specific knowledge lives in exactly one place — the `OnModelCreating` mapping in `ShelterDbContext`.
+
+The pattern is overkill for one-off queries. Adopt it when the project genuinely cares about provider portability and the function name surfaces in more than one slice.
+
 #### Why no MediatR
 
 The same reasoning applies one level up. Many CQRS codebases dispatch commands and queries through a mediator — `mediator.Send(new CreateShelterCommand(...))` resolves to an `ICommandHandler<CreateShelterCommand, ShelterDetailResponse>` registered by assembly scan. The project deliberately does not use this pattern. Endpoints inject the handler class and call `handler.HandleAsync(...)` directly:

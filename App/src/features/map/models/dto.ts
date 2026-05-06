@@ -17,4 +17,6 @@ export interface SearchSheltersCriteria extends BoundingBox {
   guests?: number;
   startUtc?: string;
   endUtc?: string;
+  /** Free-text trigram query against shelter Name. */
+  q?: string;
 }

@@ -353,6 +353,13 @@
             }
           },
           {
+            "name": "Q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "Guests",
             "in": "query",
             "schema": {

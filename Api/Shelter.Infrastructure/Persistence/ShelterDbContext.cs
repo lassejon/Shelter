@@ -22,5 +22,12 @@ public sealed class ShelterDbContext(DbContextOptions<ShelterDbContext> options)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ShelterDbContext).Assembly);
+
+        // Map App.Persistence.TextFunctions.TrigramSimilarity → Postgres pg_trgm similarity(a, b).
+        // App stays provider-agnostic; this binding is the only Postgres-specific bit.
+        modelBuilder
+            .HasDbFunction(typeof(TextFunctions)
+                .GetMethod(nameof(TextFunctions.TrigramSimilarity))!)
+            .HasName("similarity");
     }
 }

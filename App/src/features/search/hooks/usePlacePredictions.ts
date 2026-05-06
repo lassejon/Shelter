@@ -6,10 +6,10 @@ interface UsePlacePredictionsResult {
   isLoading: boolean;
 }
 
+/** Caller is responsible for debouncing `query` (e.g. via shared/hooks/useDebouncedValue). */
 export function usePlacePredictions(
   query: string,
   locationBias?: { lat: number; lng: number },
-  debounceMs = 300,
 ): UsePlacePredictionsResult {
   const [results, setResults] = useState<PlacePrediction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,15 +26,20 @@ export function usePlacePredictions(
       }, 0);
       return () => clearTimeout(t);
     }
-    const timer = setTimeout(async () => {
+    let cancelled = false;
+    const t = setTimeout(async () => {
       setIsLoading(true);
       const bias = lat !== undefined && lng !== undefined ? { lat, lng } : undefined;
       const predictions = await getPlacePredictions(trimmed, bias);
+      if (cancelled) return;
       setResults(predictions);
       setIsLoading(false);
-    }, debounceMs);
-    return () => clearTimeout(timer);
-  }, [query, lat, lng, debounceMs]);
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [query, lat, lng]);
 
   return { results, isLoading };
 }
