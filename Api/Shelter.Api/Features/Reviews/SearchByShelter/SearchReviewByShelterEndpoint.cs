@@ -1,4 +1,5 @@
 using App.Features.Reviews.SearchByShelter;
+using App.Features.Reviews.Shared;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Shelter.Api.Features.Reviews.SearchByShelter;
@@ -19,11 +20,11 @@ public static class SearchReviewByShelterEndpoint
 
     private static async Task<Ok<SearchReviewByShelterResponse>> HandleAsync(
         Guid id,
-        [AsParameters] SearchReviewByShelterRequest request,
+        [AsParameters] PaginationParameters paging,
         SearchReviewByShelterHandler handler,
         CancellationToken cancellationToken)
     {
-        var response = await handler.HandleAsync(id, request, cancellationToken);
+        var response = await handler.HandleAsync(id, paging, cancellationToken);
         return TypedResults.Ok(response);
     }
 }

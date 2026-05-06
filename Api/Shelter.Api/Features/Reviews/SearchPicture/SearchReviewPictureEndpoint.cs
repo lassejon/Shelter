@@ -1,4 +1,5 @@
 using App.Features.Reviews.SearchPicture;
+using App.Features.Reviews.Shared;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Shelter.Api.Features.Reviews.SearchPicture;
@@ -19,11 +20,11 @@ public static class SearchReviewPictureEndpoint
 
     private static async Task<Ok<SearchReviewPictureResponse>> HandleAsync(
         Guid id,
-        [AsParameters] SearchReviewPictureRequest request,
+        [AsParameters] PaginationParameters paging,
         SearchReviewPictureHandler handler,
         CancellationToken cancellationToken)
     {
-        var response = await handler.HandleAsync(id, request, cancellationToken);
+        var response = await handler.HandleAsync(id, paging, cancellationToken);
         return TypedResults.Ok(response);
     }
 }

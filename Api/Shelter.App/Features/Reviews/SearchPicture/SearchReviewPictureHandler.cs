@@ -12,7 +12,7 @@ public sealed class SearchReviewPictureHandler(IShelterDbContext db, IFileStorag
 
     public async Task<SearchReviewPictureResponse> HandleAsync(
         Guid shelterId,
-        SearchReviewPictureRequest request,
+        PaginationParameters paging,
         CancellationToken cancellationToken)
     {
         var shelterExists = await db.Shelters
@@ -20,8 +20,11 @@ public sealed class SearchReviewPictureHandler(IShelterDbContext db, IFileStorag
         if (!shelterExists)
             throw new DomainNotFoundException($"Shelter {shelterId} was not found.");
 
-        var page = request.Page < 1 ? 1 : request.Page;
-        var pageSize = request.PageSize is < 1 or > MaxPageSize ? 20 : request.PageSize;
+        var page = paging.Page ?? 1;
+        if (page < 1) page = 1;
+
+        var pageSize = paging.PageSize ?? 10;
+        if (pageSize is < 1 or > MaxPageSize) pageSize = 10;
 
         var baseQuery = db.Reviews
             .AsNoTracking()
