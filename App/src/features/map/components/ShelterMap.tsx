@@ -67,7 +67,7 @@ export default function ShelterMap({
   onCenterChange,
   onShelterClick,
 }: ShelterMapProps) {
-  const { bbox, updateViewport, cleanup } = useMapViewport();
+  const { bbox, zoom, updateViewport, cleanup } = useMapViewport();
   const filters = useMapFilterStore((state) => state.filters);
   const guests = useMapFilterStore((state) => state.guests);
   const dates = useMapFilterStore((state) => state.dates);
@@ -109,7 +109,12 @@ export default function ShelterMap({
           onCenterChange={onCenterChange}
           onViewportChange={updateViewport}
         />
-        <DeckGLOverlay shelters={shelters} onShelterClick={onShelterClick} />
+        <DeckGLOverlay
+          shelters={shelters}
+          bbox={bbox}
+          zoom={zoom}
+          onShelterClick={onShelterClick}
+        />
       </Map>
     </APIProvider>
   );
