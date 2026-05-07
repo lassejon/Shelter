@@ -25,15 +25,14 @@ public sealed class CreateBookingHandler(
             .FirstOrDefaultAsync(s => s.Id == shelterId, cancellationToken)
             ?? throw new DomainNotFoundException($"Shelter {shelterId} was not found.");
 
-        shelter.AssertCanBeBooked(request.Type, request.Guests);
-
         var overlapping = await db.Bookings
             .Where(b => b.ShelterId == shelterId)
             .Where(b => b.Status != BookingStatus.Cancelled)
             .Where(b => b.StartUtc < endUtc && b.EndUtc > startUtc)
+            .Select(b => new BookingPeriod(b.StartUtc, b.EndUtc, b.Guests, b.Type))
             .ToListAsync(cancellationToken);
 
-        AssertNoConflicts(overlapping, request.Type, request.Guests, shelter.Capacity);
+        shelter.AssertCanFit(overlapping, new BookingPeriod(startUtc, endUtc, request.Guests, request.Type));
 
         var now = clock.UtcNow;
         var today = NormalizeToDate(now);
@@ -60,30 +59,4 @@ public sealed class CreateBookingHandler(
 
     private static DateTimeOffset NormalizeToDate(DateTimeOffset value) =>
         new(value.Year, value.Month, value.Day, 0, 0, 0, TimeSpan.Zero);
-
-    private static void AssertNoConflicts(
-        IReadOnlyList<Booking> overlapping,
-        BookingType requestedType,
-        int requestedGuests,
-        int shelterCapacity)
-    {
-        if (overlapping.Count == 0) return;
-
-        if (requestedType == BookingType.Exclusive)
-            throw new DomainValidationException(
-                "Cannot create exclusive booking — shelter has existing bookings during this period.");
-
-        if (overlapping.Any(b => b.Type == BookingType.Exclusive))
-            throw new DomainValidationException(
-                "Cannot create booking — shelter is exclusively booked during this period.");
-
-        var concurrentInclusiveGuests = overlapping
-            .Where(b => b.Type == BookingType.Inclusive)
-            .Sum(b => b.Guests);
-
-        if (concurrentInclusiveGuests + requestedGuests > shelterCapacity)
-            throw new DomainValidationException(
-                $"Insufficient capacity — requested {requestedGuests} guests but only " +
-                $"{shelterCapacity - concurrentInclusiveGuests} spots available during this period.");
-    }
 }

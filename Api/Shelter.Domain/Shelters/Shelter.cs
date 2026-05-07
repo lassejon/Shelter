@@ -140,6 +140,62 @@ public class Shelter
                 $"Guest count ({guests}) exceeds shelter capacity ({Capacity}).");
     }
 
+    /// <summary>
+    /// Asserts that <paramref name="candidate"/> can be added to this shelter given the supplied
+    /// non-cancelled overlapping bookings. Caller filters overlap by status and time window before
+    /// calling — this method does no querying. Throws <see cref="DomainValidationException"/> on
+    /// conflict; returns silently if the booking fits.
+    /// </summary>
+    public void AssertCanFit(IReadOnlyList<BookingPeriod> overlapping, BookingPeriod candidate)
+    {
+        AssertCanBeBooked(candidate.Type, candidate.Guests);
+
+        if (overlapping.Count == 0) return;
+
+        if (candidate.Type == BookingType.Exclusive)
+            throw new DomainValidationException(
+                "Cannot create exclusive booking — shelter has existing bookings during this period.");
+
+        if (overlapping.Any(b => b.Type == BookingType.Exclusive))
+            throw new DomainValidationException(
+                "Cannot create booking — shelter is exclusively booked during this period.");
+
+        var peak = PeakInclusiveGuests(overlapping, candidate.StartUtc, candidate.EndUtc);
+        if (peak + candidate.Guests > Capacity)
+            throw new DomainValidationException(
+                $"Insufficient capacity — requested {candidate.Guests} guests but only " +
+                $"{Capacity - peak} spots available during this period.");
+    }
+
+    /// <summary>
+    /// Peak concurrent inclusive guests within <c>[windowStartUtc, windowEndUtc)</c> across the
+    /// supplied bookings. Exclusive bookings are filtered out — callers handle exclusive-overlap
+    /// rejection separately.
+    /// </summary>
+    /// <remarks>
+    /// Sweepline: peak can only occur at a candidate moment in
+    /// {windowStartUtc} ∪ {b.StartUtc for b in overlapping bookings, clamped to the window}.
+    /// Booking moments outside any booking interval contribute zero, so they're skipped.
+    /// O(n²) — fine for the partial-availability filter on a single shelter's overlapping set.
+    /// </remarks>
+    public static int PeakInclusiveGuests(
+        IReadOnlyList<BookingPeriod> overlapping,
+        DateTimeOffset windowStartUtc,
+        DateTimeOffset windowEndUtc)
+    {
+        var inclusive = overlapping.Where(b => b.Type == BookingType.Inclusive).ToList();
+        if (inclusive.Count == 0) return 0;
+
+        var candidates = new List<DateTimeOffset> { windowStartUtc };
+        candidates.AddRange(inclusive
+            .Select(b => b.StartUtc)
+            .Where(t => t > windowStartUtc && t < windowEndUtc));
+
+        return candidates.Max(t => inclusive
+            .Where(b => b.StartUtc <= t && t < b.EndUtc)
+            .Sum(b => b.Guests));
+    }
+
     private bool AcceptsBookingType(BookingType type) => BookingPolicy switch
     {
         ShelterBookingPolicy.ExclusiveOnly => type == BookingType.Exclusive,

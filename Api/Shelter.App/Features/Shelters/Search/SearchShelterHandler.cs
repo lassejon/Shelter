@@ -137,32 +137,23 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
                 b.Status != BookingStatus.Cancelled &&
                 b.StartUtc < endUtc &&
                 b.EndUtc > startUtc)
-            .Select(b => new { b.ShelterId, b.StartUtc, b.EndUtc, b.Guests, b.Type })
+            .Select(b => new { b.ShelterId, Period = new BookingPeriod(b.StartUtc, b.EndUtc, b.Guests, b.Type) })
             .ToListAsync(cancellationToken);
 
-        var bookingsByShelter = bookings.ToLookup(b => b.ShelterId);
+        var periodsByShelter = bookings
+            .GroupBy(b => b.ShelterId)
+            .ToDictionary(g => g.Key, g => g.Select(b => b.Period).ToList());
 
         return shelters
             .Where(s =>
             {
-                var shelterBookings = bookingsByShelter[s.Id].ToList();
-                // Any overlapping exclusive booking blocks the entire shelter for the window.
-                if (shelterBookings.Any(b => b.Type == BookingType.Exclusive)) return false;
+                if (!periodsByShelter.TryGetValue(s.Id, out var periods))
+                    return s.Capacity >= requestedGuests;
 
-                // Inclusive bookings share capacity. Peak concurrent inclusive guests must leave room for the
-                // requested party. Sweepline: peak can only occur at a candidate moment in {startUtc} ∪ {b.Start
-                // for b in overlapping bookings, clamped to the requested window}.
-                if (shelterBookings.Count == 0) return s.Capacity >= requestedGuests;
+                // Any overlapping exclusive booking blocks the shelter, regardless of capacity.
+                if (periods.Any(b => b.Type == BookingType.Exclusive)) return false;
 
-                var candidates = new List<DateTimeOffset> { startUtc };
-                candidates.AddRange(shelterBookings
-                    .Select(b => b.StartUtc)
-                    .Where(t => t > startUtc && t < endUtc));
-
-                var peak = candidates.Max(t => shelterBookings
-                    .Where(b => b.StartUtc <= t && t < b.EndUtc)
-                    .Sum(b => b.Guests));
-
+                var peak = ShelterEntity.PeakInclusiveGuests(periods, startUtc, endUtc);
                 return s.Capacity - peak >= requestedGuests;
             })
             .ToList();
