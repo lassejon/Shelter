@@ -5,10 +5,14 @@ import { useShelter } from '@/features/shelters/hooks/useShelter';
 import { PictureGallery } from '@/features/shelters/components/PictureGallery';
 import { ReviewSummaryBadge } from '@/features/shelters/components/ReviewSummaryBadge';
 import { bookingPolicyLabel } from '@/features/shelters/models/dto';
+import { BookingWidget } from '@/features/bookings/components/BookingWidget';
+import { OwnerBookingsPanel } from '@/features/bookings/components/OwnerBookingsPanel';
+import { useAuthStore } from '@/features/auth/stores/auth.store';
 
 export default function ShelterDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const { data: shelter, isLoading, error } = useShelter(id);
+  const currentUserId = useAuthStore((s) => s.userId);
 
   if (isLoading) return <Layout><LoadingSkeleton /></Layout>;
   if (error) return <Layout><ErrorState error={error} /></Layout>;
@@ -17,6 +21,7 @@ export default function ShelterDetailsPage() {
   const capacity = Number(shelter.capacity);
   const lat = Number(shelter.latitude);
   const lng = Number(shelter.longitude);
+  const isOwner = currentUserId !== null && currentUserId === shelter.ownerId;
 
   return (
     <Layout>
@@ -62,6 +67,16 @@ export default function ShelterDetailsPage() {
           </div>
         </div>
       </div>
+
+      <div className="mb-6">
+        <BookingWidget shelter={shelter} />
+      </div>
+
+      {isOwner && (
+        <div className="mb-6">
+          <OwnerBookingsPanel shelterId={shelter.id} />
+        </div>
+      )}
     </Layout>
   );
 }
