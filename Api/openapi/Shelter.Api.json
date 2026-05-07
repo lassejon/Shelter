@@ -737,6 +737,82 @@
         ]
       }
     },
+    "/api/shelters/{id}/bookings/availability": {
+      "get": {
+        "tags": [
+          "Shelters"
+        ],
+        "summary": "List booking occupancy for a shelter without exposing booker details.",
+        "operationId": "SearchBookingAvailability",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "From",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "To",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BookingAvailabilityResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/shelters/{id}/reviews": {
       "post": {
         "tags": [
@@ -1393,6 +1469,40 @@
           "expiresAtUtc": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "BookingAvailabilityResponse": {
+        "required": [
+          "startUtc",
+          "endUtc",
+          "guests",
+          "type",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "startUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "guests": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "type": {
+            "$ref": "#/components/schemas/BookingType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
           }
         }
       },

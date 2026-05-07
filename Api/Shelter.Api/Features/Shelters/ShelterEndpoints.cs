@@ -1,4 +1,5 @@
 using Shelter.Api.Features.Bookings.Create;
+using Shelter.Api.Features.Bookings.SearchAvailability;
 using Shelter.Api.Features.Bookings.SearchByShelter;
 using Shelter.Api.Features.Reviews.Create;
 using Shelter.Api.Features.Reviews.GetMine;
@@ -29,6 +30,7 @@ public static class ShelterEndpoints
         // Slice files live under Features/Bookings/, only the URL mounting is nested here.
         var bookingsUnderShelter = group.MapGroup("/{id:guid}/bookings");
         bookingsUnderShelter.MapCreateBooking();
+        bookingsUnderShelter.MapSearchBookingAvailability();
         bookingsUnderShelter.MapSearchBookingByShelter();
 
         // Nested review sub-resources: create / list reviews *of a specific shelter*,

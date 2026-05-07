@@ -19,16 +19,13 @@ import type { DateRange } from 'react-day-picker';
 import {
   BookingStatus,
   BookingType,
-  type BookingDetailResponse,
+  type BookingAvailabilityResponse,
 } from '@/features/bookings/models/dto';
-import {
-  ShelterBookingPolicy,
-  type ShelterDetailResponse,
-} from '@/features/shelters/models/dto';
+import { ShelterBookingPolicy, type ShelterDetailResponse } from '@/features/shelters/models/dto';
 
 interface BookingDatePickerProps {
   shelter: ShelterDetailResponse;
-  bookings: BookingDetailResponse[];
+  bookings: BookingAvailabilityResponse[];
   selectedRange: DateRange | undefined;
   onRangeChange: (range: DateRange | undefined) => void;
   onCapacityChange?: (maxCapacity: number) => void;
@@ -56,19 +53,16 @@ interface DayAvailability {
 
 function calculateAvailability(
   shelter: ShelterDetailResponse,
-  bookings: BookingDetailResponse[],
+  bookings: BookingAvailabilityResponse[],
 ): Map<string, DayAvailability> {
   const out = new Map<string, DayAvailability>();
   const today = startOfDay(new Date());
   const horizon = addDays(today, 365);
   const capacity = Number(shelter.capacity);
   const policy = Number(shelter.bookingPolicy);
-  // Cancelled bookings stay in the response (so the user can see their history) but they don't
-  // occupy capacity. The bbox-search handler on the API applies the same filter; without this
-  // the date picker would keep a slot blocked even after the booking that owned it was cancelled.
-  const activeBookings = bookings.filter(
-    (b) => Number(b.status) !== BookingStatus.Cancelled,
-  );
+  // The availability endpoint excludes cancelled bookings, and this extra guard keeps the
+  // datepicker correct if a broader booking response is reused here later.
+  const activeBookings = bookings.filter((b) => Number(b.status) !== BookingStatus.Cancelled);
 
   for (let date = today; date <= horizon; date = addDays(date, 1)) {
     const key = format(date, 'yyyy-MM-dd');
@@ -94,7 +88,9 @@ function calculateAvailability(
 
     const checkinGuests = checkinBookings.reduce((s, b) => s + Number(b.guests), 0);
     const checkoutGuests = checkoutBookings.reduce((s, b) => s + Number(b.guests), 0);
-    const hasExclusiveCheckin = checkinBookings.some((b) => Number(b.type) === BookingType.Exclusive);
+    const hasExclusiveCheckin = checkinBookings.some(
+      (b) => Number(b.type) === BookingType.Exclusive,
+    );
     const hasExclusiveCheckout = checkoutBookings.some(
       (b) => Number(b.type) === BookingType.Exclusive,
     );
@@ -163,10 +159,7 @@ export function BookingDatePicker({
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
   const today = startOfDay(new Date());
 
-  const availability = useMemo(
-    () => calculateAvailability(shelter, bookings),
-    [shelter, bookings],
-  );
+  const availability = useMemo(() => calculateAvailability(shelter, bookings), [shelter, bookings]);
 
   const hasFullyBookedBetween = useCallback(
     (start: Date, end: Date): boolean => {
@@ -183,11 +176,7 @@ export function BookingDatePicker({
   useEffect(() => {
     if (!selectedRange?.from || !selectedRange?.to || !onCapacityChange) return;
     let minCapacity = Number(shelter.capacity);
-    for (
-      let date = selectedRange.from;
-      isBefore(date, selectedRange.to);
-      date = addDays(date, 1)
-    ) {
+    for (let date = selectedRange.from; isBefore(date, selectedRange.to); date = addDays(date, 1)) {
       const a = availability.get(format(date, 'yyyy-MM-dd'));
       if (a) minCapacity = Math.min(minCapacity, a.availableCapacityForCheckin);
     }
@@ -255,12 +244,9 @@ export function BookingDatePicker({
 
   const isRangeStart = (day: Date) =>
     selectedRange?.from ? isSameDay(day, selectedRange.from) : false;
-  const isRangeEnd = (day: Date) =>
-    selectedRange?.to ? isSameDay(day, selectedRange.to) : false;
-  const isPreviewStart = (day: Date) =>
-    previewRange ? isSameDay(day, previewRange.from) : false;
-  const isPreviewEnd = (day: Date) =>
-    previewRange ? isSameDay(day, previewRange.to) : false;
+  const isRangeEnd = (day: Date) => (selectedRange?.to ? isSameDay(day, selectedRange.to) : false);
+  const isPreviewStart = (day: Date) => (previewRange ? isSameDay(day, previewRange.from) : false);
+  const isPreviewEnd = (day: Date) => (previewRange ? isSameDay(day, previewRange.to) : false);
 
   function renderDayCell(day: Date, monthStart: Date) {
     const key = format(day, 'yyyy-MM-dd');
@@ -288,15 +274,12 @@ export function BookingDatePicker({
 
     const checkoutStatus = a?.checkoutStatus ?? 'available';
     const checkinStatus = a?.checkinStatus ?? 'available';
-    const showCapacity =
-      checkinStatus === 'partial' && a && !inRange && !isStart;
+    const showCapacity = checkinStatus === 'partial' && a && !inRange && !isStart;
     const hasStatusDiagonal = checkoutStatus !== checkinStatus;
     const showSelectionHighlight = inRange || isSelectionStart;
-    const showPreviewHighlight =
-      inPreview && !inRange && !isSelectionStart && isPreviewValid;
+    const showPreviewHighlight = inPreview && !inRange && !isSelectionStart && isPreviewValid;
 
-    const highlightTopLeft =
-      (inRange && !isStart) || (inPreview && !isPrevStart && isPreviewValid);
+    const highlightTopLeft = (inRange && !isStart) || (inPreview && !isPrevStart && isPreviewValid);
     const highlightBottomRight =
       (inRange && !isEnd) || isSelectionStart || (inPreview && !isPrevEnd && isPreviewValid);
     const highlightFull =
@@ -430,8 +413,7 @@ export function BookingDatePicker({
 
           <span
             className={`relative z-10 ${
-              (highlightFull || (highlightTopLeft && highlightBottomRight)) &&
-              !showPreviewHighlight
+              (highlightFull || (highlightTopLeft && highlightBottomRight)) && !showPreviewHighlight
                 ? 'font-bold text-white'
                 : 'text-slate-900'
             }`}
@@ -465,10 +447,7 @@ export function BookingDatePicker({
           <thead>
             <tr>
               {WEEKDAYS.map((d) => (
-                <th
-                  key={d}
-                  className="p-1 text-center text-xs font-semibold text-slate-600"
-                >
+                <th key={d} className="p-1 text-center text-xs font-semibold text-slate-600">
                   {d}
                 </th>
               ))}
@@ -522,16 +501,24 @@ export function BookingDatePicker({
 
       {selectedRange?.from && !selectedRange?.to && (
         <div className="mt-4 rounded-lg border border-primary-200 bg-primary-50 p-2 text-sm text-primary-800">
-          <strong>Check-in:</strong> {format(selectedRange.from, 'MMMM d, yyyy')} — Now
-          select your check-out date
+          <strong>Check-in:</strong> {format(selectedRange.from, 'MMMM d, yyyy')} — Now select your
+          check-out date
         </div>
       )}
 
       <div className="mt-6 border-t border-slate-200 pt-4">
         <p className="mb-3 text-xs font-semibold text-slate-700">Legend:</p>
         <div className="flex flex-wrap gap-4 text-xs">
-          <LegendSwatch bg={STATUS_BG.available} border={STATUS_BORDER.available} label="Available" />
-          <LegendSwatch bg={STATUS_BG.partial} border={STATUS_BORDER.partial} label="Partial (shared)" />
+          <LegendSwatch
+            bg={STATUS_BG.available}
+            border={STATUS_BORDER.available}
+            label="Available"
+          />
+          <LegendSwatch
+            bg={STATUS_BG.partial}
+            border={STATUS_BORDER.partial}
+            label="Partial (shared)"
+          />
           <LegendSwatch bg={STATUS_BG.full} border={STATUS_BORDER.full} label="Fully booked" />
           <LegendSwatch bg={SELECTION_BG} border={SELECTION_COLOR} label="Your selection" />
         </div>
@@ -540,18 +527,13 @@ export function BookingDatePicker({
   );
 }
 
-function LegendSwatch({
-  bg,
-  border,
-  label,
-}: {
-  bg: string;
-  border: string;
-  label: string;
-}) {
+function LegendSwatch({ bg, border, label }: { bg: string; border: string; label: string }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="h-6 w-6 rounded border-2" style={{ backgroundColor: bg, borderColor: border }} />
+      <div
+        className="h-6 w-6 rounded border-2"
+        style={{ backgroundColor: bg, borderColor: border }}
+      />
       <span className="text-slate-600">{label}</span>
     </div>
   );

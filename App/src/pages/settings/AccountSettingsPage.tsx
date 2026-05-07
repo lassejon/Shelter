@@ -3,6 +3,8 @@ import { toast } from 'sonner';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { useUpgradeToOwner } from '@/features/auth/hooks/useUpgradeToOwner';
 import { useLogout } from '@/features/auth/hooks/useLogout';
+import { Button } from '@/shared/ui/Button';
+import { Card } from '@/shared/ui/Card';
 
 const SHELTER_OWNER_ROLE = 'ShelterOwner';
 
@@ -36,7 +38,7 @@ export function AccountSettingsPage() {
         <p className="text-slate-600">Your profile and preferences.</p>
       </div>
 
-      <section className="rounded-lg border border-slate-200 p-6">
+      <Card as="section">
         <h2 className="mb-4 text-lg font-semibold text-slate-900">Profile</h2>
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <ProfileField label="Name" value={fullName} />
@@ -52,48 +54,47 @@ export function AccountSettingsPage() {
             </dd>
           </div>
         </dl>
-      </section>
+      </Card>
 
       {!isOwner && (
-        <section className="rounded-lg border-2 border-primary-200 bg-primary-50 p-6">
+        <Card as="section" variant="accent">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100">
               <Star className="h-6 w-6 text-primary-700" />
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-semibold text-slate-900">
-                Become a shelter owner
-              </h2>
+              <h2 className="text-lg font-semibold text-slate-900">Become a shelter owner</h2>
               <p className="mt-1 text-sm text-slate-700">
-                List your own shelters, manage bookings, and reach travellers looking
-                for somewhere to stay.
+                List your own shelters, manage bookings, and reach travellers looking for somewhere
+                to stay.
               </p>
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                className="mt-4"
                 onClick={handleUpgrade}
                 disabled={upgradeMutation.isPending}
-                className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {upgradeMutation.isPending ? 'Upgrading…' : 'Upgrade my account'}
-              </button>
+              </Button>
             </div>
           </div>
-        </section>
+        </Card>
       )}
 
-      <section className="rounded-lg border border-slate-200 p-6">
+      <Card as="section">
         <h2 className="mb-2 text-lg font-semibold text-slate-900">Sign out</h2>
         <p className="mb-4 text-sm text-slate-600">End your session on this device.</p>
-        <button
+        <Button
           type="button"
+          variant="dangerOutline"
           onClick={handleLogout}
           disabled={logoutMutation.isPending}
-          className="inline-flex items-center gap-2 rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <LogOut className="h-4 w-4" />
           {logoutMutation.isPending ? 'Signing out…' : 'Sign out'}
-        </button>
-      </section>
+        </Button>
+      </Card>
     </div>
   );
 }
@@ -109,9 +110,7 @@ function ProfileField({ label, value }: { label: string; value: string }) {
 
 function RoleBadge({ role }: { role: string }) {
   const isOwner = role === SHELTER_OWNER_ROLE;
-  const styles = isOwner
-    ? 'bg-primary-100 text-primary-800'
-    : 'bg-slate-100 text-slate-700';
+  const styles = isOwner ? 'bg-primary-100 text-primary-800' : 'bg-slate-100 text-slate-700';
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${styles}`}

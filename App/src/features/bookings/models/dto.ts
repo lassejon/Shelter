@@ -1,6 +1,7 @@
 import type { components } from '@/shared/api/types/paths';
 
 export type BookingDetailResponse = components['schemas']['BookingDetailResponse'];
+export type BookingAvailabilityResponse = components['schemas']['BookingAvailabilityResponse'];
 export type CreateBookingRequest = components['schemas']['CreateBookingRequest'];
 
 export const BookingType = {

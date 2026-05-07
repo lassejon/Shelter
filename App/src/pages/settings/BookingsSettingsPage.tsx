@@ -1,4 +1,3 @@
-import { Link } from 'react-router';
 import { Calendar, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMyBookings } from '@/features/bookings/hooks/useMyBookings';
@@ -13,6 +12,8 @@ import {
   type EffectiveBookingStatus,
 } from '@/features/bookings/models/effectiveStatus';
 import { formatDateRange } from '@/shared/utils/date';
+import { Button, LinkButton } from '@/shared/ui/Button';
+import { Card } from '@/shared/ui/Card';
 
 export function BookingsSettingsPage() {
   // Include history so the user can see ended trips with an "Ended" badge.
@@ -20,36 +21,33 @@ export function BookingsSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <Card className="flex items-center justify-center p-8" padding="none">
         <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-      </div>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className="p-8 text-center">
+      <Card className="p-8 text-center" padding="none">
         <p className="font-semibold text-red-600">Failed to load bookings</p>
         <p className="mt-1 text-sm text-slate-600">Please try again later.</p>
-      </div>
+      </Card>
     );
   }
 
   if (!bookings || bookings.length === 0) {
     return (
-      <div className="p-8 text-center">
+      <Card className="p-8 text-center" padding="none">
         <Calendar className="mx-auto mb-4 h-12 w-12 text-slate-300" />
         <p className="mb-2 text-slate-600">You don't have any bookings yet.</p>
         <p className="mb-6 text-sm text-slate-500">
           Start exploring shelters to make your first booking.
         </p>
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
-        >
+        <LinkButton to="/" variant="primary">
           Explore shelters
-        </Link>
-      </div>
+        </LinkButton>
+      </Card>
     );
   }
 
@@ -85,15 +83,11 @@ function BookingCard({ booking }: { booking: BookingDetailResponse }) {
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-slate-200 p-6 transition-shadow hover:shadow-md">
+    <Card as="article" className="space-y-4" variant="interactive">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">
-            {shelter?.name ?? 'Shelter'}
-          </h3>
-          <p className="mt-1 text-slate-600">
-            {formatDateRange(booking.startUtc, booking.endUtc)}
-          </p>
+          <h3 className="text-lg font-semibold text-slate-900">{shelter?.name ?? 'Shelter'}</h3>
+          <p className="mt-1 text-slate-600">{formatDateRange(booking.startUtc, booking.endUtc)}</p>
           <p className="mt-1 text-sm text-slate-500">
             {Number(booking.guests)} {Number(booking.guests) === 1 ? 'guest' : 'guests'}
           </p>
@@ -101,24 +95,22 @@ function BookingCard({ booking }: { booking: BookingDetailResponse }) {
         <BookingStatusBadge status={eff} />
       </div>
       <div className="flex gap-3 pt-2">
-        <Link
-          to={`/shelters/${booking.shelterId}`}
-          className="text-sm font-medium text-primary-600 transition-colors hover:text-primary-700"
-        >
+        <LinkButton to={`/shelters/${booking.shelterId}`} variant="link" size="inline">
           View shelter
-        </Link>
+        </LinkButton>
         {canCancel && (
-          <button
+          <Button
             type="button"
+            variant="dangerLink"
+            size="inline"
             onClick={handleCancel}
             disabled={cancelMutation.isPending}
-            className="text-sm font-medium text-red-600 transition-colors hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {cancelMutation.isPending ? 'Cancelling…' : 'Cancel booking'}
-          </button>
+          </Button>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
 

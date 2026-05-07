@@ -6,6 +6,7 @@ using App.Features.Auth.UpgradeToOwner;
 using App.Features.Bookings.Cancel;
 using App.Features.Bookings.Create;
 using App.Features.Bookings.Get;
+using App.Features.Bookings.SearchAvailability;
 using App.Features.Bookings.SearchByBooker;
 using App.Features.Bookings.SearchByShelter;
 using App.Features.Reviews.Create;
@@ -49,6 +50,7 @@ public static class DependencyInjection
     {
         services.AddScoped<CreateBookingHandler>();
         services.AddScoped<GetBookingHandler>();
+        services.AddScoped<SearchBookingAvailabilityHandler>();
         services.AddScoped<SearchBookingByBookerHandler>();
         services.AddScoped<SearchBookingByShelterHandler>();
         services.AddScoped<CancelBookingHandler>();

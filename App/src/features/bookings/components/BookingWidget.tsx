@@ -1,24 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Calendar, CheckCircle2, Minus, Plus } from 'lucide-react';
-import { differenceInCalendarDays, format } from 'date-fns';
+import { addDays, differenceInCalendarDays, format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import { Button } from '@/shared/ui/Button';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { useMapFilterStore } from '@/shared/stores/map-filter.store';
-import { useShelterBookings } from '@/features/bookings/hooks/useShelterBookings';
+import { useShelterAvailability } from '@/features/bookings/hooks/useShelterAvailability';
 import { useCreateBooking } from '@/features/bookings/hooks/useCreateBooking';
 import { BookingDatePicker } from './BookingDatePicker';
-import {
-  BookingType,
-  type BookingTypeValue,
-} from '@/features/bookings/models/dto';
-import {
-  ShelterBookingPolicy,
-  type ShelterDetailResponse,
-} from '@/features/shelters/models/dto';
+import { BookingType, type BookingTypeValue } from '@/features/bookings/models/dto';
+import { ShelterBookingPolicy, type ShelterDetailResponse } from '@/features/shelters/models/dto';
 
 interface BookingWidgetProps {
   shelter: ShelterDetailResponse;
@@ -53,11 +47,23 @@ export function BookingWidget({ shelter }: BookingWidgetProps) {
     [shelter.bookingPolicy],
   );
   const [bookingType, setBookingType] = useState<BookingTypeValue>(allowedTypes[0]);
-  const [maxAvailableGuests, setMaxAvailableGuests] = useState<number>(
-    Number(shelter.capacity),
-  );
+  const [maxAvailableGuests, setMaxAvailableGuests] = useState<number>(Number(shelter.capacity));
+  const availabilityWindow = useMemo(() => {
+    const today = new Date();
+    return {
+      from: `${format(today, 'yyyy-MM-dd')}T00:00:00Z`,
+      to: `${format(addDays(today, 366), 'yyyy-MM-dd')}T00:00:00Z`,
+    };
+  }, []);
 
-  const { data: bookings = [], isLoading: bookingsLoading } = useShelterBookings(shelter.id);
+  const {
+    data: availabilityBookings = [],
+    isLoading: availabilityLoading,
+    error: availabilityError,
+  } = useShelterAvailability(shelter.id, {
+    ...availabilityWindow,
+    enabled: isAuthenticated,
+  });
   const createMutation = useCreateBooking();
 
   // Clamp guest count down when availability shrinks (e.g. user picks a partially-booked range).
@@ -116,13 +122,16 @@ export function BookingWidget({ shelter }: BookingWidgetProps) {
     Boolean(selectedRange?.from) &&
     Boolean(selectedRange?.to) &&
     !createMutation.isPending &&
+    !availabilityError &&
     guests <= maxAvailableGuests &&
     guests >= 1;
 
   const errorMessage = (() => {
     if (!createMutation.error) return null;
     if (createMutation.error instanceof AxiosError) {
-      const data = createMutation.error.response?.data as { detail?: string; title?: string } | undefined;
+      const data = createMutation.error.response?.data as
+        | { detail?: string; title?: string }
+        | undefined;
       return data?.detail ?? data?.title ?? createMutation.error.message;
     }
     return createMutation.error.message ?? 'Could not create booking';
@@ -151,17 +160,24 @@ export function BookingWidget({ shelter }: BookingWidgetProps) {
     <div className="rounded-lg bg-white p-6 shadow">
       <h2 className="mb-4 text-xl font-semibold text-slate-900">Book this shelter</h2>
 
-      {bookingsLoading ? (
+      {availabilityLoading ? (
         <div className="animate-pulse space-y-4">
           <div className="h-64 rounded bg-slate-200" />
           <div className="h-10 rounded bg-slate-200" />
+        </div>
+      ) : availabilityError ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="text-sm font-medium text-red-900">Failed to load availability</p>
+          <p className="mt-1 text-sm text-red-700">
+            Please refresh the page before choosing dates for this shelter.
+          </p>
         </div>
       ) : (
         <>
           <div className="mb-6">
             <BookingDatePicker
               shelter={shelter}
-              bookings={bookings}
+              bookings={availabilityBookings}
               selectedRange={selectedRange}
               onRangeChange={setSelectedRange}
               onCapacityChange={setMaxAvailableGuests}
@@ -170,9 +186,7 @@ export function BookingWidget({ shelter }: BookingWidgetProps) {
 
           {allowedTypes.length > 1 && (
             <div className="mb-6">
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Booking Type
-              </label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Booking Type</label>
               <div className="grid grid-cols-2 gap-3">
                 <BookingTypeOption
                   active={bookingType === BookingType.Exclusive}
@@ -310,7 +324,8 @@ function BookingConfirmation({
       </div>
       <h2 className="mb-2 text-2xl font-bold text-slate-900">Booking confirmed</h2>
       <p className="mb-6 text-slate-600">
-        We've reserved your spot at <span className="font-medium text-slate-900">{shelter.name}</span>.
+        We've reserved your spot at{' '}
+        <span className="font-medium text-slate-900">{shelter.name}</span>.
       </p>
 
       <div className="mx-auto mb-6 max-w-md rounded-lg border border-slate-200 bg-slate-50 p-5 text-left">
