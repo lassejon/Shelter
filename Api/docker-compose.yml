@@ -17,5 +17,20 @@ services:
       timeout: 3s
       retries: 5
 
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: shelter-azurite
+    restart: unless-stopped
+    # Bind to 0.0.0.0 so the host (and other containers) can reach the emulator.
+    # The default only listens on 127.0.0.1 inside the container, which is unreachable from outside.
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0"
+    ports:
+      - "10000:10000"  # Blob
+      - "10001:10001"  # Queue
+      - "10002:10002"  # Table
+    volumes:
+      - shelter-azurite:/data
+
 volumes:
   shelter-postgres:
+  shelter-azurite:

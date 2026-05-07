@@ -15,7 +15,7 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
     /// short-vs-short). Below this, a name match is considered noise. pg_trgm's default is 0.3;
     /// 0.2 is more forgiving for typos.
     /// </summary>
-    private const double NameSimilarityThreshold = 0.2;
+    private const double NameSimilarityThreshold = 0.1;
 
     /// <summary>
     /// Word-similarity floor for matching Q against the shelter Description (asymmetric, short-vs-long).
@@ -23,7 +23,7 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
     /// word-bounded substring rather than overall trigram overlap, so the threshold is set higher
     /// to keep description hits relevant. pg_trgm's default is 0.6.
     /// </summary>
-    private const double DescriptionSimilarityThreshold = 0.5;
+    private const double DescriptionSimilarityThreshold = 0.25;
 
     public async Task<IReadOnlyList<SearchShelterResponse>> HandleAsync(
         SearchShelterRequest request,

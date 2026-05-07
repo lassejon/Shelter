@@ -19,6 +19,16 @@ const policyLabels: Record<ShelterBookingPolicyValue, string> = {
   [ShelterBookingPolicy.Both]: 'Exclusive or inclusive',
 };
 
+const policyDescriptions: Record<ShelterBookingPolicyValue, string> = {
+  [ShelterBookingPolicy.ExclusiveOnly]: 'Reserved for one party at a time. Other guests cannot join.',
+  [ShelterBookingPolicy.InclusiveOnly]: 'Shareable. Multiple parties can stay if there is remaining capacity.',
+  [ShelterBookingPolicy.Both]: 'Shareable by default; guests can also book the entire shelter exclusively.',
+};
+
 export function bookingPolicyLabel(policy: number): string {
   return policyLabels[policy as ShelterBookingPolicyValue] ?? 'Unknown';
+}
+
+export function bookingPolicyDescription(policy: number): string {
+  return policyDescriptions[policy as ShelterBookingPolicyValue] ?? '';
 }
