@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { logout as logoutApi } from '@/features/auth/api/logout';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 
@@ -17,6 +18,7 @@ export function useLogout() {
     onSettled: () => {
       logoutStore();
       queryClient.clear();
+      toast.success('Signed out');
     },
   });
 }
