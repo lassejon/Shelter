@@ -7,6 +7,7 @@ import { ReviewSummaryBadge } from '@/features/shelters/components/ReviewSummary
 import { bookingPolicyLabel } from '@/features/shelters/models/dto';
 import { BookingWidget } from '@/features/bookings/components/BookingWidget';
 import { OwnerBookingsPanel } from '@/features/bookings/components/OwnerBookingsPanel';
+import { ShelterReviews } from '@/features/reviews/components/ShelterReviews';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 
 export default function ShelterDetailsPage() {
@@ -77,6 +78,10 @@ export default function ShelterDetailsPage() {
           <OwnerBookingsPanel shelterId={shelter.id} />
         </div>
       )}
+
+      <div className="mb-6">
+        <ShelterReviews shelterId={shelter.id} initialSummary={shelter.reviewSummary} />
+      </div>
     </Layout>
   );
 }
