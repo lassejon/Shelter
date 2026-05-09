@@ -17,6 +17,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shelter.UnitTests", "tests\Shelter.UnitTests\Shelter.UnitTests.csproj", "{62938B46-34D0-41B6-923B-A6630B52F5A7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shelter.IntegrationTests", "tests\Shelter.IntegrationTests\Shelter.IntegrationTests.csproj", "{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,11 +89,24 @@ Global
 		{62938B46-34D0-41B6-923B-A6630B52F5A7}.Release|x64.Build.0 = Release|Any CPU
 		{62938B46-34D0-41B6-923B-A6630B52F5A7}.Release|x86.ActiveCfg = Release|Any CPU
 		{62938B46-34D0-41B6-923B-A6630B52F5A7}.Release|x86.Build.0 = Release|Any CPU
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}.Debug|x64.Build.0 = Debug|Any CPU
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}.Debug|x86.Build.0 = Debug|Any CPU
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}.Release|x64.ActiveCfg = Release|Any CPU
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}.Release|x64.Build.0 = Release|Any CPU
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}.Release|x86.ActiveCfg = Release|Any CPU
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{62938B46-34D0-41B6-923B-A6630B52F5A7} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{8AD2B6C9-1F8E-4C2E-9AB1-7E5F2C4D1A02} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

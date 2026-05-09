@@ -5,6 +5,10 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>App</RootNamespace>
+        <!-- App is Web SDK so handlers can reference Microsoft.AspNetCore.Identity and ILogger<T>
+             via the framework reference without explicit package refs, but it has no entry point
+             of its own — Shelter.Api is the host. -->
+        <OutputType>Library</OutputType>
     </PropertyGroup>
 
     <ItemGroup>
