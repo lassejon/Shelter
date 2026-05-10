@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { Calendar, Menu, User } from 'lucide-react';
+import { Calendar, House, Menu, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
@@ -82,6 +82,8 @@ function AuthenticatedMenu({
   onClose: () => void;
 }) {
   const logoutMutation = useLogout();
+  const roles = useAuthStore((state) => state.roles);
+  const isOwner = roles.includes('ShelterOwner');
 
   return (
     <div className="space-y-3">
@@ -95,6 +97,16 @@ function AuthenticatedMenu({
         <Calendar size={16} />
         <span>My Bookings</span>
       </Link>
+      {isOwner && (
+        <Link
+          to="/settings/shelters"
+          onClick={onClose}
+          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100"
+        >
+          <House size={16} />
+          <span>Manage Shelters</span>
+        </Link>
+      )}
       <Link
         to="/settings/account"
         onClick={onClose}
