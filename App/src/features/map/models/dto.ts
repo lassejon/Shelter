@@ -9,7 +9,11 @@ export interface BoundingBox {
   maxLongitude: number;
 }
 
-export interface SearchSheltersCriteria extends BoundingBox {
+export interface SearchSheltersCriteria extends Partial<BoundingBox> {
+  // bbox fields are optional: the backend's spatial filter is conditional on all four
+  // being supplied, so callers that only want to search by name can omit them entirely.
+  // Avoid sending a near-worldwide bbox as a stand-in for "no filter" — PostGIS
+  // geography intersection rejects it as antipodal.
   limit?: number;
   minRating?: number;
   minCapacity?: number;

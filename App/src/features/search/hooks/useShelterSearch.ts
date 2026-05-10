@@ -18,17 +18,13 @@ export function useShelterSearch(query: string): UseShelterSearchResult {
   const result = useQuery({
     queryKey: ['shelters', 'search', trimmed],
     queryFn: ({ signal }) =>
-      searchShelters(
-        {
-          minLatitude: -90,
-          maxLatitude: 90,
-          minLongitude: -180,
-          maxLongitude: 180,
-          q: trimmed,
-          limit: RESULT_LIMIT,
-        },
-        signal,
-      ),
+      // No bbox: the search bar is "find by name", not "find within a viewport". Backend
+      // skips the spatial filter when any of the four lat/lng params is missing.
+      // Previously we sent `(-180, -90, 180, 90)` to act as "worldwide", but PostGIS
+      // geography intersection rejects polygons that span the antimeridian
+      // ("Antipodal (180 degrees long) edge detected"), so this hook silently returned
+      // empty for every query.
+      searchShelters({ q: trimmed, limit: RESULT_LIMIT }, signal),
     enabled,
     staleTime: 60 * 1000,
     placeholderData: (previousData) => previousData,
