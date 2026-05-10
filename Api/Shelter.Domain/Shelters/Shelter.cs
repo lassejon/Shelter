@@ -1,5 +1,7 @@
+using NetTopologySuite.Geometries;
 using Shelter.Domain.Bookings;
 using Shelter.Domain.Common;
+using Shelter.Domain.Spatial;
 using Shelter.Domain.Users;
 
 namespace Shelter.Domain.Shelters;
@@ -20,8 +22,7 @@ public class Shelter
     public int Capacity { get; private set; }
     public ShelterBookingPolicy BookingPolicy { get; private set; }
 
-    public double Latitude { get; private set; }
-    public double Longitude { get; private set; }
+    public Point Location { get; private set; } = null!;
 
     public bool IsActive { get; private set; }
 
@@ -53,8 +54,7 @@ public class Shelter
             Description = description,
             Capacity = capacity,
             BookingPolicy = bookingPolicy,
-            Latitude = latitude,
-            Longitude = longitude,
+            Location = MakePoint(latitude, longitude),
             IsActive = true,
             CreatedAt = now,
             UpdatedAt = now,
@@ -83,8 +83,7 @@ public class Shelter
     {
         ValidateCoordinates(latitude, longitude);
 
-        Latitude = latitude;
-        Longitude = longitude;
+        Location = MakePoint(latitude, longitude);
         UpdatedAt = now;
     }
 
@@ -223,6 +222,9 @@ public class Shelter
         if (longitude is < -180 or > 180)
             throw new DomainValidationException("Longitude must be in [-180, 180].");
     }
+
+    private static Point MakePoint(double latitude, double longitude) =>
+        new(longitude, latitude) { SRID = SpatialReference.Wgs84 };
 
     private static void ValidateBookingPolicy(ShelterBookingPolicy bookingPolicy)
     {

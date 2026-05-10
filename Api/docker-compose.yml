@@ -1,6 +1,12 @@
 services:
   postgres:
-    image: postgres:18-alpine
+    # Custom image: official postgres:18 + postgresql-18-postgis-3 from PGDG. Built locally
+    # so we depend on a single trusted upstream (the official postgres image) instead of a
+    # third-party PostGIS distro. The image: tag pins what compose builds and lets
+    # Testcontainers reuse the cached image in integration tests.
+    build:
+      context: ./docker/postgres
+    image: shelter-postgis:dev
     container_name: shelter-postgres
     restart: unless-stopped
     environment:

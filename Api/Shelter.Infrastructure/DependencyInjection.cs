@@ -24,7 +24,9 @@ public static class DependencyInjection
 
         services.AddDbContext<ShelterDbContext>((sp, options) =>
         {
-            options.UseNpgsql(configuration.GetConnectionString("Default"));
+            options.UseNpgsql(
+                configuration.GetConnectionString("Default"),
+                npgsql => npgsql.UseNetTopologySuite());
 
             var env = sp.GetRequiredService<IHostEnvironment>();
             if (env.IsDevelopment())

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Shelter.Domain.Spatial;
 using Shelter.Domain.Users;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
@@ -24,8 +25,9 @@ public sealed class ShelterConfiguration : IEntityTypeConfiguration<ShelterEntit
         builder.Property(s => s.Capacity)
             .IsRequired();
 
-        builder.Property(s => s.Latitude);
-        builder.Property(s => s.Longitude);
+        builder.Property(s => s.Location)
+            .HasColumnType($"geography (point, {SpatialReference.Wgs84})")
+            .IsRequired();
 
         builder.Property(s => s.BookingPolicy)
             .HasConversion<int>()

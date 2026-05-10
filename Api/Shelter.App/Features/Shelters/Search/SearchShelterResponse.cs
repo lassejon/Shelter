@@ -27,8 +27,8 @@ public record SearchShelterResponse(
         shelter.Name,
         shelter.Description,
         shelter.Capacity,
-        shelter.Latitude,
-        shelter.Longitude,
+        shelter.Location.Y,
+        shelter.Location.X,
         shelter.BookingPolicy,
         shelter.IsActive,
         shelter.Pictures

@@ -2,8 +2,10 @@ using App.Common;
 using App.Features.Reviews.Shared;
 using App.Persistence;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using Shelter.Domain.Bookings;
 using Shelter.Domain.Common;
+using Shelter.Domain.Spatial;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
 namespace App.Features.Shelters.Search;
@@ -50,11 +52,17 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
 
         if (request is { MinLatitude: not null, MaxLatitude: not null, MinLongitude: not null, MaxLongitude: not null })
         {
-            query = query.Where(s =>
-                s.Latitude  >= request.MinLatitude.Value &&
-                s.Latitude  <= request.MaxLatitude.Value &&
-                s.Longitude >= request.MinLongitude.Value &&
-                s.Longitude <= request.MaxLongitude.Value);
+            // PostGIS geography → ST_Intersects with a polygonised envelope. Envelope takes
+            // (minX, maxX, minY, maxY) = (minLng, maxLng, minLat, maxLat). The geography column
+            // gets cast to geometry on the spatial index lookup.
+            var envelope = new Envelope(
+                request.MinLongitude.Value,
+                request.MaxLongitude.Value,
+                request.MinLatitude.Value,
+                request.MaxLatitude.Value);
+            var bounds = GeometryFactory.Default.ToGeometry(envelope);
+            bounds.SRID = SpatialReference.Wgs84;
+            query = query.Where(s => s.Location.Intersects(bounds));
         }
 
         // Capacity floor: the explicit MinCapacity filter, raised by Guests if larger. Guests beyond total

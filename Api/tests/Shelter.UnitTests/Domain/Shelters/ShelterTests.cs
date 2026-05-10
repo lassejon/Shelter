@@ -1,6 +1,7 @@
 using Shelter.Domain.Bookings;
 using Shelter.Domain.Common;
 using Shelter.Domain.Shelters;
+using Shelter.Domain.Spatial;
 using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
 namespace Shelter.UnitTests.Domain.Shelters;
@@ -100,8 +101,10 @@ public class ShelterTests
 
         shelter.Relocate(60.0, 10.0, later);
 
-        shelter.Latitude.Should().Be(60.0);
-        shelter.Longitude.Should().Be(10.0);
+        // NTS Point stores (X, Y) = (longitude, latitude)
+        shelter.Location.Y.Should().Be(60.0);
+        shelter.Location.X.Should().Be(10.0);
+        shelter.Location.SRID.Should().Be(SpatialReference.Wgs84);
         shelter.UpdatedAt.Should().Be(later);
     }
 
