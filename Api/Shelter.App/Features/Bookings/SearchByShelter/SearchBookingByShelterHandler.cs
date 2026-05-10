@@ -32,7 +32,8 @@ public sealed class SearchBookingByShelterHandler(IShelterDbContext db)
             query = query.Where(b => b.StartUtc <= request.To.Value);
 
         var bookings = await query
-            .OrderBy(b => b.StartUtc)
+            .OrderBy(b => b.Status)
+            .ThenByDescending(b => b.StartUtc)
             .ToListAsync(cancellationToken);
 
         return bookings.Select(BookingDetailResponse.FromDomain).ToList();

@@ -9,38 +9,48 @@ import { useCancelBooking } from '@/features/bookings/hooks/useCancelBooking';
 import { Button } from '@/shared/ui/Button';
 import { Card } from '@/shared/ui/Card';
 import { formatDateRange } from '@/shared/utils/date';
-import { bookingTypeLabel } from '@/features/bookings/models/dto';
+import {
+  BookingStatus,
+  bookingTypeLabel,
+  type BookingDetailResponse,
+  type BookingStatusValue,
+} from '@/features/bookings/models/dto';
 import {
   effectiveBookingStatus,
   effectiveBookingStatusLabel,
   effectiveBookingStatusStyles,
   type EffectiveBookingStatus,
 } from '@/features/bookings/models/effectiveStatus';
-import type { BookingDetailResponse } from '@/features/bookings/models/dto';
 
-const STATUS_ORDER: Record<EffectiveBookingStatus, number> = {
-  pending: 0,
-  ongoing: 1,
-  confirmed: 2,
-  ended: 3,
-  cancelled: 4,
-};
+type SectionKey = 'pending' | 'confirmed' | 'cancelled';
+
+const SECTION_DEFS: { key: SectionKey; status: BookingStatusValue; title: string }[] = [
+  { key: 'pending', status: BookingStatus.Pending, title: 'Pending' },
+  { key: 'confirmed', status: BookingStatus.Confirmed, title: 'Confirmed' },
+  { key: 'cancelled', status: BookingStatus.Cancelled, title: 'Cancelled' },
+];
 
 export function ManageShelterBookingsPage() {
   const { id } = useParams<{ id: string }>();
   const { data: shelter } = useShelter(id);
   const { data: bookings, isLoading, error } = useShelterBookings(id);
 
-  const sorted = useMemo(() => {
-    if (!bookings) return [];
-    const now = new Date();
-    return bookings
-      .map((b) => ({ b, eff: effectiveBookingStatus(b, now) }))
-      .sort((a, b) => {
-        const byStatus = STATUS_ORDER[a.eff] - STATUS_ORDER[b.eff];
-        if (byStatus !== 0) return byStatus;
-        return new Date(a.b.startUtc).getTime() - new Date(b.b.startUtc).getTime();
-      });
+  const grouped = useMemo(() => {
+    const buckets: Record<SectionKey, BookingDetailResponse[]> = {
+      pending: [],
+      confirmed: [],
+      cancelled: [],
+    };
+    if (!bookings) return buckets;
+    // Backend returns Pending → Confirmed → Cancelled, then StartUtc desc within each.
+    // Preserve that order by pushing into the matching bucket as we iterate.
+    for (const booking of bookings) {
+      const status = Number(booking.status) as BookingStatusValue;
+      if (status === BookingStatus.Pending) buckets.pending.push(booking);
+      else if (status === BookingStatus.Confirmed) buckets.confirmed.push(booking);
+      else if (status === BookingStatus.Cancelled) buckets.cancelled.push(booking);
+    }
+    return buckets;
   }, [bookings]);
 
   if (isLoading) {
@@ -58,6 +68,8 @@ export function ManageShelterBookingsPage() {
     );
   }
 
+  const totalCount = grouped.pending.length + grouped.confirmed.length + grouped.cancelled.length;
+
   return (
     <div className="space-y-6">
       <div>
@@ -74,15 +86,19 @@ export function ManageShelterBookingsPage() {
         </p>
       </div>
 
-      {sorted.length === 0 ? (
+      {totalCount === 0 ? (
         <Card className="p-8 text-center" padding="none">
           <Calendar className="mx-auto mb-4 h-12 w-12 text-slate-300" />
           <p className="text-slate-600">No bookings yet on this shelter.</p>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {sorted.map(({ b, eff }) => (
-            <BookingRow key={String(b.id)} booking={b} eff={eff} />
+        <div className="space-y-8">
+          {SECTION_DEFS.filter((s) => grouped[s.key].length > 0).map((section) => (
+            <BookingsSection
+              key={section.key}
+              title={section.title}
+              bookings={grouped[section.key]}
+            />
           ))}
         </div>
       )}
@@ -90,13 +106,32 @@ export function ManageShelterBookingsPage() {
   );
 }
 
-function BookingRow({
-  booking,
-  eff,
+function BookingsSection({
+  title,
+  bookings,
 }: {
-  booking: BookingDetailResponse;
-  eff: EffectiveBookingStatus;
+  title: string;
+  bookings: BookingDetailResponse[];
 }) {
+  return (
+    <section>
+      <div className="mb-3 flex items-baseline gap-3">
+        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <span className="text-sm text-slate-500">
+          {bookings.length} {bookings.length === 1 ? 'booking' : 'bookings'}
+        </span>
+      </div>
+      <div className="space-y-3">
+        {bookings.map((booking) => (
+          <BookingRow key={String(booking.id)} booking={booking} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function BookingRow({ booking }: { booking: BookingDetailResponse }) {
+  const eff: EffectiveBookingStatus = effectiveBookingStatus(booking);
   const approveMutation = useApproveBooking();
   const cancelMutation = useCancelBooking();
 
