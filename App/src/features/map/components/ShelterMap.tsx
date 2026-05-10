@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import { env } from '@/shared/config/env';
 import { useBboxShelters } from '@/features/map/hooks/useBboxShelters';
+import { useCenterOnUserLocation } from '@/features/map/hooks/useCenterOnUserLocation';
 import { useMapViewport } from '@/features/map/hooks/useMapViewport';
 import { useMapFilterStore } from '@/shared/stores/map-filter.store';
 import type { SearchShelterResponse } from '@/features/map/models/dto';
@@ -42,6 +43,10 @@ function MapController({ onMapReady, onCenterChange, onViewportChange }: MapCont
   useEffect(() => {
     if (map && onMapReady) onMapReady(flyTo);
   }, [map, onMapReady, flyTo]);
+
+  // Auto-centre the map on the user's physical position the first time the
+  // map is ready in this tab session. Silent on denial — keeps Copenhagen.
+  useCenterOnUserLocation(map ? flyTo : null);
 
   useEffect(() => {
     if (!map) return;
