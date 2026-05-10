@@ -1,3 +1,4 @@
+using Shelter.Api.Features.Bookings.Approve;
 using Shelter.Api.Features.Bookings.Cancel;
 using Shelter.Api.Features.Bookings.Get;
 using Shelter.Api.Features.Bookings.SearchByBooker;
@@ -13,6 +14,7 @@ public static class BookingEndpoints
 
         group.MapGetBooking();
         group.MapSearchBookingByBooker();
+        group.MapApproveBooking();
         group.MapCancelBooking();
 
         return app;

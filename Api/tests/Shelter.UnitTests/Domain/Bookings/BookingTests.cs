@@ -1,5 +1,6 @@
 using Shelter.Domain.Bookings;
 using Shelter.Domain.Common;
+using Shelter.Domain.Shelters;
 
 namespace Shelter.UnitTests.Domain.Bookings;
 
@@ -22,6 +23,7 @@ public class BookingTests
             endUtc ?? Today.AddDays(5),
             guests,
             type,
+            BookingApprovalMode.Instant,
             Today,
             Now);
 
@@ -202,5 +204,63 @@ public class BookingTests
 
         booking.BookedBy(BookerId).Should().BeTrue();
         booking.BookedBy(Guid.NewGuid()).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Create_starts_pending_when_shelter_requires_approval()
+    {
+        var booking = Booking.Create(
+            ShelterId,
+            BookerId,
+            Today.AddDays(3),
+            Today.AddDays(5),
+            2,
+            BookingType.Inclusive,
+            BookingApprovalMode.RequiresApproval,
+            Today,
+            Now);
+
+        booking.Status.Should().Be(BookingStatus.Pending);
+    }
+
+    [Fact]
+    public void Confirm_transitions_pending_to_confirmed()
+    {
+        var booking = Booking.Create(
+            ShelterId,
+            BookerId,
+            Today.AddDays(3),
+            Today.AddDays(5),
+            2,
+            BookingType.Inclusive,
+            BookingApprovalMode.RequiresApproval,
+            Today,
+            Now);
+        var approvedAt = Now.AddHours(1);
+
+        booking.Confirm(approvedAt);
+
+        booking.Status.Should().Be(BookingStatus.Confirmed);
+        booking.UpdatedAt.Should().Be(approvedAt);
+    }
+
+    [Fact]
+    public void Confirm_throws_when_booking_has_already_started()
+    {
+        var booking = Booking.Create(
+            ShelterId,
+            BookerId,
+            Today.AddDays(2),
+            Today.AddDays(4),
+            2,
+            BookingType.Inclusive,
+            BookingApprovalMode.RequiresApproval,
+            Today,
+            Now);
+        var nowAfterStart = Today.AddDays(3);
+
+        var act = () => booking.Confirm(nowAfterStart);
+
+        act.Should().Throw<DomainValidationException>().WithMessage("*started*");
     }
 }

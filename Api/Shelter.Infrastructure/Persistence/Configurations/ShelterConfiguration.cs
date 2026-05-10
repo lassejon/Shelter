@@ -33,6 +33,10 @@ public sealed class ShelterConfiguration : IEntityTypeConfiguration<ShelterEntit
             .HasConversion<int>()
             .IsRequired();
 
+        builder.Property(s => s.BookingApprovalMode)
+            .HasConversion<int>()
+            .IsRequired();
+
         builder.Property(s => s.IsActive);
         builder.Property(s => s.CreatedAt);
         builder.Property(s => s.UpdatedAt);

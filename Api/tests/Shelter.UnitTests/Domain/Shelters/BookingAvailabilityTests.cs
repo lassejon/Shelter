@@ -18,7 +18,7 @@ public class BookingAvailabilityTests
     private static readonly Guid OwnerId = Guid.NewGuid();
 
     private static ShelterEntity ShelterWith(int capacity, ShelterBookingPolicy policy = ShelterBookingPolicy.Both) =>
-        ShelterEntity.Create(OwnerId, "Hut", null, capacity, 0, 0, policy, Now);
+        ShelterEntity.Create(OwnerId, "Hut", null, capacity, 0, 0, policy, BookingApprovalMode.Instant, Now);
 
     private static BookingPeriod Inclusive(DateTimeOffset start, DateTimeOffset end, int guests) =>
         new(start, end, guests, BookingType.Inclusive);

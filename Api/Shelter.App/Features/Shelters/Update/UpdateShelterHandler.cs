@@ -35,15 +35,18 @@ public sealed class UpdateShelterHandler(
 
         var hasScalarChange = request.Name is not null
             || request.Description is not null
-            || request.Capacity.HasValue;
+            || request.Capacity.HasValue
+            || request.BookingPolicy.HasValue
+            || request.BookingApprovalMode.HasValue;
 
         if (hasScalarChange)
         {
             shelter.UpdateDetails(
-                request.Name        ?? shelter.Name,
-                request.Description ?? shelter.Description,
-                request.Capacity    ?? shelter.Capacity,
-                shelter.BookingPolicy,
+                request.Name                ?? shelter.Name,
+                request.Description         ?? shelter.Description,
+                request.Capacity            ?? shelter.Capacity,
+                request.BookingPolicy       ?? shelter.BookingPolicy,
+                request.BookingApprovalMode ?? shelter.BookingApprovalMode,
                 now);
         }
 

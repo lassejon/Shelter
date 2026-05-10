@@ -3,6 +3,7 @@ using App.Features.Auth.Login;
 using App.Features.Auth.Me;
 using App.Features.Auth.Register;
 using App.Features.Auth.UpgradeToOwner;
+using App.Features.Bookings.Approve;
 using App.Features.Bookings.Cancel;
 using App.Features.Bookings.Create;
 using App.Features.Bookings.Get;
@@ -20,6 +21,7 @@ using App.Features.Shelters.Create;
 using App.Features.Shelters.Delete;
 using App.Features.Shelters.Get;
 using App.Features.Shelters.Search;
+using App.Features.Shelters.SearchByOwner;
 using App.Features.Shelters.Update;
 
 namespace App;
@@ -31,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<CreateShelterHandler>();
         services.AddScoped<GetShelterHandler>();
         services.AddScoped<SearchShelterHandler>();
+        services.AddScoped<SearchShelterByOwnerHandler>();
         services.AddScoped<UpdateShelterHandler>();
         services.AddScoped<DeleteShelterHandler>();
         services.AddScoped<AssetOrphanRecovery>();
@@ -53,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<SearchBookingAvailabilityHandler>();
         services.AddScoped<SearchBookingByBookerHandler>();
         services.AddScoped<SearchBookingByShelterHandler>();
+        services.AddScoped<ApproveBookingHandler>();
         services.AddScoped<CancelBookingHandler>();
         return services;
     }

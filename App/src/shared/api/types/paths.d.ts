@@ -126,6 +126,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/shelters/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List every shelter you own (active and deactivated) */
+        get: operations["SearchShelterByOwner"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/shelters/{id}/bookings": {
         parameters: {
             query?: never;
@@ -248,6 +265,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/bookings/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a pending booking on a shelter you own */
+        post: operations["ApproveBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reviews/{id}": {
         parameters: {
             query?: never;
@@ -282,6 +316,7 @@ export interface components {
             /** Format: date-time */
             expiresAtUtc: string;
         };
+        BookingApprovalMode: number;
         BookingAvailabilityResponse: {
             /** Format: date-time */
             startUtc: string;
@@ -338,6 +373,7 @@ export interface components {
             /** Format: double */
             longitude?: number | string;
             bookingPolicy?: components["schemas"]["ShelterBookingPolicy"];
+            bookingApprovalMode?: components["schemas"]["BookingApprovalMode"];
         };
         /** Format: binary */
         IFormFile: string;
@@ -423,6 +459,7 @@ export interface components {
             /** Format: double */
             longitude: number | string;
             bookingPolicy: components["schemas"]["ShelterBookingPolicy"];
+            bookingApprovalMode: components["schemas"]["BookingApprovalMode"];
             isActive: boolean;
             pictures: components["schemas"]["PictureResponse"][];
             reviewSummary: components["schemas"]["ReviewSummary"];
@@ -442,6 +479,7 @@ export interface components {
             /** Format: double */
             longitude: number | string;
             bookingPolicy: components["schemas"]["ShelterBookingPolicy"];
+            bookingApprovalMode: components["schemas"]["BookingApprovalMode"];
             isActive: boolean;
             /** Format: date-time */
             createdAt: string;
@@ -460,6 +498,8 @@ export interface components {
             description?: null | string;
             /** Format: int32 */
             capacity?: null | number | string;
+            bookingPolicy?: null | components["schemas"]["ShelterBookingPolicy"];
+            bookingApprovalMode?: null | components["schemas"]["BookingApprovalMode"];
             isActive?: null | boolean;
             pictureIdsToDelete?: null | string[];
         };
@@ -802,6 +842,26 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SearchShelterByOwner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShelterDetailResponse"][];
                 };
             };
         };
@@ -1186,6 +1246,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingDetailResponse"][];
+                };
+            };
+        };
+    };
+    ApproveBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingDetailResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };

@@ -46,11 +46,12 @@ internal static class TestData
         double latitude = 56.0,
         double longitude = 10.0,
         ShelterBookingPolicy policy = ShelterBookingPolicy.Both,
+        BookingApprovalMode approvalMode = BookingApprovalMode.Instant,
         DateTimeOffset? now = null,
         CancellationToken cancellationToken = default)
     {
         var shelter = ShelterEntity.Create(
-            ownerId, name, description, capacity, latitude, longitude, policy,
+            ownerId, name, description, capacity, latitude, longitude, policy, approvalMode,
             now ?? new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
         db.Shelters.Add(shelter);
         await db.SaveChangesAsync(cancellationToken);
@@ -67,9 +68,10 @@ internal static class TestData
         DateTimeOffset now,
         int guests = 2,
         BookingType type = BookingType.Inclusive,
+        BookingApprovalMode shelterApprovalMode = BookingApprovalMode.Instant,
         CancellationToken cancellationToken = default)
     {
-        var booking = Booking.Create(shelterId, bookerId, startUtc, endUtc, guests, type, today, now);
+        var booking = Booking.Create(shelterId, bookerId, startUtc, endUtc, guests, type, shelterApprovalMode, today, now);
         db.Bookings.Add(booking);
         await db.SaveChangesAsync(cancellationToken);
         return booking;

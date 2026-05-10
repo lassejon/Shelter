@@ -21,6 +21,7 @@ public class Shelter
 
     public int Capacity { get; private set; }
     public ShelterBookingPolicy BookingPolicy { get; private set; }
+    public BookingApprovalMode BookingApprovalMode { get; private set; }
 
     public Point Location { get; private set; } = null!;
 
@@ -39,12 +40,14 @@ public class Shelter
         double latitude,
         double longitude,
         ShelterBookingPolicy bookingPolicy,
+        BookingApprovalMode bookingApprovalMode,
         DateTimeOffset now)
     {
         ValidateName(name);
         ValidateCapacity(capacity);
         ValidateCoordinates(latitude, longitude);
         ValidateBookingPolicy(bookingPolicy);
+        ValidateBookingApprovalMode(bookingApprovalMode);
 
         return new Shelter
         {
@@ -54,6 +57,7 @@ public class Shelter
             Description = description,
             Capacity = capacity,
             BookingPolicy = bookingPolicy,
+            BookingApprovalMode = bookingApprovalMode,
             Location = MakePoint(latitude, longitude),
             IsActive = true,
             CreatedAt = now,
@@ -66,16 +70,19 @@ public class Shelter
         string? description,
         int capacity,
         ShelterBookingPolicy bookingPolicy,
+        BookingApprovalMode bookingApprovalMode,
         DateTimeOffset now)
     {
         ValidateName(name);
         ValidateCapacity(capacity);
         ValidateBookingPolicy(bookingPolicy);
+        ValidateBookingApprovalMode(bookingApprovalMode);
 
         Name = name;
         Description = description;
         Capacity = capacity;
         BookingPolicy = bookingPolicy;
+        BookingApprovalMode = bookingApprovalMode;
         UpdatedAt = now;
     }
 
@@ -230,5 +237,11 @@ public class Shelter
     {
         if (!Enum.IsDefined(bookingPolicy))
             throw new DomainValidationException("Unknown booking policy.");
+    }
+
+    private static void ValidateBookingApprovalMode(BookingApprovalMode bookingApprovalMode)
+    {
+        if (!Enum.IsDefined(bookingApprovalMode))
+            throw new DomainValidationException("Unknown booking approval mode.");
     }
 }

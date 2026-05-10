@@ -1,4 +1,5 @@
 using Shelter.Domain.Common;
+using Shelter.Domain.Shelters;
 using Shelter.Domain.Users;
 
 namespace Shelter.Domain.Bookings;
@@ -29,6 +30,7 @@ public class Booking
         DateTimeOffset endUtc,
         int guests,
         BookingType type,
+        BookingApprovalMode shelterApprovalMode,
         DateTimeOffset today,
         DateTimeOffset now)
     {
@@ -47,8 +49,9 @@ public class Booking
             EndUtc = endUtc,
             Guests = guests,
             Type = type,
-            // MVP: auto-confirm. Switch to Pending when an approval workflow lands.
-            Status = BookingStatus.Confirmed,
+            Status = shelterApprovalMode == BookingApprovalMode.RequiresApproval
+                ? BookingStatus.Pending
+                : BookingStatus.Confirmed,
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -59,6 +62,8 @@ public class Booking
         if (Status == BookingStatus.Cancelled)
             throw new DomainValidationException("Cannot confirm a cancelled booking.");
         if (Status == BookingStatus.Confirmed) return;
+        if (now >= StartUtc)
+            throw new DomainValidationException("Cannot confirm a booking that has started or is in the past.");
 
         Status = BookingStatus.Confirmed;
         UpdatedAt = now;

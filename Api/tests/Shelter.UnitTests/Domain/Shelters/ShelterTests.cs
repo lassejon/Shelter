@@ -14,7 +14,7 @@ public class ShelterTests
     private static ShelterEntity ValidShelter(
         int capacity = 4,
         ShelterBookingPolicy policy = ShelterBookingPolicy.Both) =>
-        ShelterEntity.Create(OwnerId, "Birch Hut", "Cozy", capacity, 55.0, 12.0, policy, Now);
+        ShelterEntity.Create(OwnerId, "Birch Hut", "Cozy", capacity, 55.0, 12.0, policy, BookingApprovalMode.Instant, Now);
 
     [Fact]
     public void Create_returns_active_shelter_with_invariants_satisfied()
@@ -34,7 +34,7 @@ public class ShelterTests
     [InlineData("   ")]
     public void Create_throws_when_name_is_blank(string name)
     {
-        var act = () => ShelterEntity.Create(OwnerId, name, null, 4, 0, 0, ShelterBookingPolicy.Both, Now);
+        var act = () => ShelterEntity.Create(OwnerId, name, null, 4, 0, 0, ShelterBookingPolicy.Both, BookingApprovalMode.Instant, Now);
 
         act.Should().Throw<DomainValidationException>().WithMessage("*name*");
     }
@@ -44,7 +44,7 @@ public class ShelterTests
     [InlineData(-3)]
     public void Create_throws_when_capacity_is_not_positive(int capacity)
     {
-        var act = () => ShelterEntity.Create(OwnerId, "Hut", null, capacity, 0, 0, ShelterBookingPolicy.Both, Now);
+        var act = () => ShelterEntity.Create(OwnerId, "Hut", null, capacity, 0, 0, ShelterBookingPolicy.Both, BookingApprovalMode.Instant, Now);
 
         act.Should().Throw<DomainValidationException>().WithMessage("*Capacity*");
     }
@@ -56,7 +56,7 @@ public class ShelterTests
     [InlineData(0, 181)]
     public void Create_throws_when_coordinates_are_out_of_range(double lat, double lng)
     {
-        var act = () => ShelterEntity.Create(OwnerId, "Hut", null, 1, lat, lng, ShelterBookingPolicy.Both, Now);
+        var act = () => ShelterEntity.Create(OwnerId, "Hut", null, 1, lat, lng, ShelterBookingPolicy.Both, BookingApprovalMode.Instant, Now);
 
         act.Should().Throw<DomainValidationException>();
     }
@@ -64,7 +64,7 @@ public class ShelterTests
     [Fact]
     public void Create_throws_when_booking_policy_is_undefined()
     {
-        var act = () => ShelterEntity.Create(OwnerId, "Hut", null, 1, 0, 0, (ShelterBookingPolicy)99, Now);
+        var act = () => ShelterEntity.Create(OwnerId, "Hut", null, 1, 0, 0, (ShelterBookingPolicy)99, BookingApprovalMode.Instant, Now);
 
         act.Should().Throw<DomainValidationException>().WithMessage("*booking policy*");
     }
@@ -75,7 +75,7 @@ public class ShelterTests
         var shelter = ValidShelter();
         var later = Now.AddHours(1);
 
-        shelter.UpdateDetails("New", "desc", 6, ShelterBookingPolicy.InclusiveOnly, later);
+        shelter.UpdateDetails("New", "desc", 6, ShelterBookingPolicy.InclusiveOnly, BookingApprovalMode.Instant, later);
 
         shelter.Name.Should().Be("New");
         shelter.Capacity.Should().Be(6);
@@ -88,7 +88,7 @@ public class ShelterTests
     {
         var shelter = ValidShelter();
 
-        var act = () => shelter.UpdateDetails("New", null, 0, ShelterBookingPolicy.Both, Now.AddHours(1));
+        var act = () => shelter.UpdateDetails("New", null, 0, ShelterBookingPolicy.Both, BookingApprovalMode.Instant, Now.AddHours(1));
 
         act.Should().Throw<DomainValidationException>();
     }

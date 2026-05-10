@@ -19,13 +19,23 @@ public sealed class CancelBookingHandler(
             .FirstOrDefaultAsync(b => b.Id == id, cancellationToken)
             ?? throw new DomainNotFoundException($"Booking {id} was not found.");
 
-        if (!booking.BookedBy(userId))
-            throw new DomainAuthorizationException("You can only cancel your own bookings.");
+        // Either the booker (cancelling their own trip) or the shelter owner
+        // (rejecting / cancelling a booking on their shelter) is allowed.
+        var isBooker = booking.BookedBy(userId);
+        var isOwner = !isBooker && await db.Shelters
+            .AsNoTracking()
+            .AnyAsync(s => s.Id == booking.ShelterId && s.OwnerId == userId, cancellationToken);
+
+        if (!isBooker && !isOwner)
+            throw new DomainAuthorizationException(
+                "You can only cancel bookings you made or that are on shelters you own.");
 
         booking.Cancel(clock.UtcNow);
 
         await db.SaveChangesAsync(cancellationToken);
 
-        logger.LogInformation("User {UserId} cancelled booking {BookingId}", userId, booking.Id);
+        logger.LogInformation(
+            "User {UserId} cancelled booking {BookingId} (as {Role})",
+            userId, booking.Id, isBooker ? "booker" : "owner");
     }
 }

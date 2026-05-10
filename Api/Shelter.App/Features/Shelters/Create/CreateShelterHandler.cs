@@ -29,6 +29,7 @@ public sealed class CreateShelterHandler(
             request.Latitude,
             request.Longitude,
             request.BookingPolicy,
+            request.BookingApprovalMode,
             now);
 
         foreach (var picture in pictures)

@@ -44,6 +44,7 @@ public sealed class CreateBookingHandler(
             endUtc,
             request.Guests,
             request.Type,
+            shelter.BookingApprovalMode,
             today,
             now);
 

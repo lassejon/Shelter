@@ -596,6 +596,35 @@
         ]
       }
     },
+    "/api/shelters/mine": {
+      "get": {
+        "tags": [
+          "Shelters"
+        ],
+        "summary": "List every shelter you own (active and deactivated)",
+        "operationId": "SearchShelterByOwner",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShelterDetailResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/shelters/{id}/bookings": {
       "post": {
         "tags": [
@@ -1237,6 +1266,73 @@
         ]
       }
     },
+    "/api/bookings/{id}/approve": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Approve a pending booking on a shelter you own",
+        "operationId": "ApproveBooking",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/reviews/{id}": {
       "get": {
         "tags": [
@@ -1472,6 +1568,9 @@
           }
         }
       },
+      "BookingApprovalMode": {
+        "type": "integer"
+      },
       "BookingAvailabilityResponse": {
         "required": [
           "startUtc",
@@ -1654,6 +1753,9 @@
           },
           "bookingPolicy": {
             "$ref": "#/components/schemas/ShelterBookingPolicy"
+          },
+          "bookingApprovalMode": {
+            "$ref": "#/components/schemas/BookingApprovalMode"
           }
         }
       },
@@ -1951,6 +2053,7 @@
           "latitude",
           "longitude",
           "bookingPolicy",
+          "bookingApprovalMode",
           "isActive",
           "pictures",
           "reviewSummary"
@@ -1997,6 +2100,9 @@
           "bookingPolicy": {
             "$ref": "#/components/schemas/ShelterBookingPolicy"
           },
+          "bookingApprovalMode": {
+            "$ref": "#/components/schemas/BookingApprovalMode"
+          },
           "isActive": {
             "type": "boolean"
           },
@@ -2024,6 +2130,7 @@
           "latitude",
           "longitude",
           "bookingPolicy",
+          "bookingApprovalMode",
           "isActive",
           "createdAt",
           "updatedAt",
@@ -2075,6 +2182,9 @@
           },
           "bookingPolicy": {
             "$ref": "#/components/schemas/ShelterBookingPolicy"
+          },
+          "bookingApprovalMode": {
+            "$ref": "#/components/schemas/BookingApprovalMode"
           },
           "isActive": {
             "type": "boolean"
@@ -2152,6 +2262,26 @@
               "string"
             ],
             "format": "int32"
+          },
+          "bookingPolicy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShelterBookingPolicy"
+              }
+            ]
+          },
+          "bookingApprovalMode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BookingApprovalMode"
+              }
+            ]
           },
           "isActive": {
             "type": [

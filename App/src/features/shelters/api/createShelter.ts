@@ -13,6 +13,7 @@ export async function createShelter(
   form.append('latitude', String(input.latitude));
   form.append('longitude', String(input.longitude));
   form.append('bookingPolicy', String(input.bookingPolicy));
+  form.append('bookingApprovalMode', String(input.bookingApprovalMode));
   pictures.forEach((file) => form.append('pictures', file));
 
   const { data } = await apiClient.post<ShelterDetailResponse>('/api/shelters', form, {
