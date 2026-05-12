@@ -1,3 +1,4 @@
+using App.Common;
 using App.Features.Bookings.Shared;
 using App.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ namespace App.Features.Bookings.SearchByBooker;
 
 public sealed class SearchBookingByBookerHandler(IShelterDbContext db)
 {
-    public async Task<IReadOnlyList<BookingDetailResponse>> HandleAsync(
+    public async Task<CollectionResponse<BookingDetailResponse>> HandleAsync(
         SearchBookingByBookerRequest request,
         Guid userId,
         CancellationToken cancellationToken)
@@ -24,6 +25,7 @@ public sealed class SearchBookingByBookerHandler(IShelterDbContext db)
             .OrderBy(b => b.StartUtc)
             .ToListAsync(cancellationToken);
 
-        return bookings.Select(BookingDetailResponse.FromDomain).ToList();
+        var items = bookings.Select(BookingDetailResponse.FromDomain).ToList();
+        return new CollectionResponse<BookingDetailResponse>(items);
     }
 }

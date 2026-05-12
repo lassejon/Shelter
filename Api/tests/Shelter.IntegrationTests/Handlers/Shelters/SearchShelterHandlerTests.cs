@@ -27,7 +27,7 @@ public sealed class SearchShelterHandlerTests(PostgresFixture postgres) : Handle
             new SearchShelterRequest { Q = "birsh" },
             CancellationToken.None);
 
-        results.Should().ContainSingle()
+        results.Items.Should().ContainSingle()
             .Which.Name.Should().Be("Birch Hut");
     }
 
@@ -48,7 +48,7 @@ public sealed class SearchShelterHandlerTests(PostgresFixture postgres) : Handle
             new SearchShelterRequest { Q = "fireplace" },
             CancellationToken.None);
 
-        results.Should().ContainSingle()
+        results.Items.Should().ContainSingle()
             .Which.Name.Should().Be("Riverside");
     }
 }

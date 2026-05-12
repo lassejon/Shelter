@@ -8,9 +8,9 @@ export async function searchShelters(
   criteria: SearchSheltersCriteria,
   signal?: AbortSignal,
 ): Promise<SearchShelterResponse[]> {
-  const { data } = await apiClient.get<SearchShelterResponse[]>('/api/shelters', {
+  const { data } = await apiClient.get<{ items: SearchShelterResponse[] }>('/api/shelters', {
     params: criteria,
     signal,
   });
-  return data;
+  return data.items;
 }

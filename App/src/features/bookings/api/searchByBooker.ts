@@ -8,8 +8,8 @@ interface SearchByBookerOptions {
 export async function searchBookingsByBooker(
   options: SearchByBookerOptions = {},
 ): Promise<BookingDetailResponse[]> {
-  const { data } = await apiClient.get<BookingDetailResponse[]>('/api/bookings', {
+  const { data } = await apiClient.get<{ items: BookingDetailResponse[] }>('/api/bookings', {
     params: { IncludeHistory: options.includeHistory ?? false },
   });
-  return data;
+  return data.items;
 }

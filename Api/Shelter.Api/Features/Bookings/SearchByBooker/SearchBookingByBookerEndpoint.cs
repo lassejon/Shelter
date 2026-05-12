@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using App.Common;
 using App.Features.Bookings.SearchByBooker;
 using App.Features.Bookings.Shared;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -13,13 +14,13 @@ public static class SearchBookingByBookerEndpoint
         group.MapGet("/", HandleAsync)
             .WithName("SearchBookingByBooker")
             .WithSummary("List your own bookings (booker view)")
-            .Produces<IReadOnlyList<BookingDetailResponse>>(StatusCodes.Status200OK)
+            .Produces<CollectionResponse<BookingDetailResponse>>(StatusCodes.Status200OK)
             .RequireAuthorization();
 
         return group;
     }
 
-    private static async Task<Ok<IReadOnlyList<BookingDetailResponse>>> HandleAsync(
+    private static async Task<Ok<CollectionResponse<BookingDetailResponse>>> HandleAsync(
         [AsParameters] SearchBookingByBookerRequest request,
         SearchBookingByBookerHandler handler,
         ClaimsPrincipal user,

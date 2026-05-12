@@ -1,3 +1,4 @@
+using App.Common;
 using App.Features.Shelters.Search;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -11,13 +12,13 @@ public static class SearchShelterEndpoint
         group.MapGet("/", HandleAsync)
             .WithName("SearchShelter")
             .WithSummary("Search shelters by bounding box and filters")
-            .Produces<IReadOnlyList<SearchShelterResponse>>(StatusCodes.Status200OK)
+            .Produces<CollectionResponse<SearchShelterResponse>>(StatusCodes.Status200OK)
             .AllowAnonymous();
 
         return group;
     }
 
-    private static async Task<Ok<IReadOnlyList<SearchShelterResponse>>> HandleAsync(
+    private static async Task<Ok<CollectionResponse<SearchShelterResponse>>> HandleAsync(
         [AsParameters] SearchShelterRequest request,
         SearchShelterHandler handler,
         CancellationToken cancellationToken)

@@ -1,3 +1,4 @@
+using App.Common;
 using App.Features.Bookings.SearchAvailability;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -10,7 +11,7 @@ public static class SearchBookingAvailabilityEndpoint
         group.MapGet("/availability", HandleAsync)
             .WithName("SearchBookingAvailability")
             .WithSummary("List booking occupancy for a shelter without exposing booker details.")
-            .Produces<IReadOnlyList<BookingAvailabilityResponse>>(StatusCodes.Status200OK)
+            .Produces<CollectionResponse<BookingAvailabilityResponse>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireAuthorization();
@@ -18,7 +19,7 @@ public static class SearchBookingAvailabilityEndpoint
         return group;
     }
 
-    private static async Task<Ok<IReadOnlyList<BookingAvailabilityResponse>>> HandleAsync(
+    private static async Task<Ok<CollectionResponse<BookingAvailabilityResponse>>> HandleAsync(
         Guid id,
         [AsParameters] SearchBookingAvailabilityRequest request,
         SearchBookingAvailabilityHandler handler,

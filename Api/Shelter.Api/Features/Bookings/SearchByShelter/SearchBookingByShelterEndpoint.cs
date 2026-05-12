@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using App.Common;
 using App.Features.Bookings.SearchByShelter;
 using App.Features.Bookings.Shared;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -14,7 +15,7 @@ public static class SearchBookingByShelterEndpoint
         group.MapGet("/", HandleAsync)
             .WithName("SearchBookingByShelter")
             .WithSummary("List bookings on a shelter (owner view)")
-            .Produces<IReadOnlyList<BookingDetailResponse>>(StatusCodes.Status200OK)
+            .Produces<CollectionResponse<BookingDetailResponse>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireAuthorization(AppPolicies.CanManageShelters);
@@ -22,7 +23,7 @@ public static class SearchBookingByShelterEndpoint
         return group;
     }
 
-    private static async Task<Ok<IReadOnlyList<BookingDetailResponse>>> HandleAsync(
+    private static async Task<Ok<CollectionResponse<BookingDetailResponse>>> HandleAsync(
         Guid id,
         [AsParameters] SearchBookingByShelterRequest request,
         SearchBookingByShelterHandler handler,

@@ -384,6 +384,18 @@ export interface components {
         };
         BookingStatus: number;
         BookingType: number;
+        CollectionResponseOfBookingAvailabilityResponse: {
+            items: components["schemas"]["BookingAvailabilityResponse"][];
+        };
+        CollectionResponseOfBookingDetailResponse: {
+            items: components["schemas"]["BookingDetailResponse"][];
+        };
+        CollectionResponseOfSearchShelterResponse: {
+            items: components["schemas"]["SearchShelterResponse"][];
+        };
+        CollectionResponseOfShelterDetailResponse: {
+            items: components["schemas"]["ShelterDetailResponse"][];
+        };
         ConfirmEmailRequest: {
             /** Format: uuid */
             userId?: string;
@@ -801,7 +813,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SearchShelterResponse"][];
+                    "application/json": components["schemas"]["CollectionResponseOfSearchShelterResponse"];
                 };
             };
         };
@@ -971,7 +983,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ShelterDetailResponse"][];
+                    "application/json": components["schemas"]["CollectionResponseOfShelterDetailResponse"];
                 };
             };
         };
@@ -996,7 +1008,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BookingDetailResponse"][];
+                    "application/json": components["schemas"]["CollectionResponseOfBookingDetailResponse"];
                 };
             };
             /** @description Forbidden */
@@ -1083,7 +1095,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BookingAvailabilityResponse"][];
+                    "application/json": components["schemas"]["CollectionResponseOfBookingAvailabilityResponse"];
                 };
             };
             /** @description Bad Request */
@@ -1355,7 +1367,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BookingDetailResponse"][];
+                    "application/json": components["schemas"]["CollectionResponseOfBookingDetailResponse"];
                 };
             };
         };

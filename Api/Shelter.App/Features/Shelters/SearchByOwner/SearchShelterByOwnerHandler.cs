@@ -14,7 +14,7 @@ namespace App.Features.Shelters.SearchByOwner;
 /// </summary>
 public sealed class SearchShelterByOwnerHandler(IShelterDbContext db, IFileStorage storage)
 {
-    public async Task<IReadOnlyList<ShelterDetailResponse>> HandleAsync(
+    public async Task<CollectionResponse<ShelterDetailResponse>> HandleAsync(
         Guid ownerId,
         CancellationToken cancellationToken)
     {
@@ -26,16 +26,18 @@ public sealed class SearchShelterByOwnerHandler(IShelterDbContext db, IFileStora
             .OrderByDescending(s => s.UpdatedAt)
             .ToListAsync(cancellationToken);
 
-        if (shelters.Count == 0) return [];
+        if (shelters.Count == 0) return new CollectionResponse<ShelterDetailResponse>([]);
 
         var summaries = await BuildSummariesAsync(
             shelters.Select(s => s.Id).ToList(),
             cancellationToken);
 
-        return shelters
+        var items = shelters
             .Select(s => ShelterDetailResponse.FromDomain(
                 s, storage, summaries.GetValueOrDefault(s.Id, ReviewSummary.Empty)))
             .ToList();
+
+        return new CollectionResponse<ShelterDetailResponse>(items);
     }
  
     private async Task<Dictionary<Guid, ReviewSummary>> BuildSummariesAsync(

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using App.Common;
 using App.Features.Shelters.SearchByOwner;
 using App.Features.Shelters.Shared;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -13,13 +14,13 @@ public static class SearchShelterByOwnerEndpoint
         group.MapGet("/mine", HandleAsync)
             .WithName("SearchShelterByOwner")
             .WithSummary("List every shelter you own (active and deactivated)")
-            .Produces<IReadOnlyList<ShelterDetailResponse>>(StatusCodes.Status200OK)
+            .Produces<CollectionResponse<ShelterDetailResponse>>(StatusCodes.Status200OK)
             .RequireAuthorization();
 
         return group;
     }
 
-    private static async Task<Ok<IReadOnlyList<ShelterDetailResponse>>> HandleAsync(
+    private static async Task<Ok<CollectionResponse<ShelterDetailResponse>>> HandleAsync(
         SearchShelterByOwnerHandler handler,
         ClaimsPrincipal user,
         CancellationToken cancellationToken)

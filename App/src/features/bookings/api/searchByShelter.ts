@@ -11,7 +11,7 @@ export async function searchBookingsByShelter(
   shelterId: string,
   options: SearchByShelterOptions = {},
 ): Promise<BookingDetailResponse[]> {
-  const { data } = await apiClient.get<BookingDetailResponse[]>(
+  const { data } = await apiClient.get<{ items: BookingDetailResponse[] }>(
     `/api/shelters/${shelterId}/bookings`,
     {
       params: {
@@ -20,5 +20,5 @@ export async function searchBookingsByShelter(
       },
     },
   );
-  return data;
+  return data.items;
 }

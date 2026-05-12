@@ -10,7 +10,7 @@ public sealed class SearchBookingAvailabilityHandler(
     IShelterDbContext db,
     IClock clock)
 {
-    public async Task<IReadOnlyList<BookingAvailabilityResponse>> HandleAsync(
+    public async Task<CollectionResponse<BookingAvailabilityResponse>> HandleAsync(
         Guid shelterId,
         SearchBookingAvailabilityRequest request,
         CancellationToken cancellationToken)
@@ -36,7 +36,8 @@ public sealed class SearchBookingAvailabilityHandler(
             .OrderBy(b => b.StartUtc)
             .ToListAsync(cancellationToken);
 
-        return bookings.Select(BookingAvailabilityResponse.FromDomain).ToList();
+        var items = bookings.Select(BookingAvailabilityResponse.FromDomain).ToList();
+        return new CollectionResponse<BookingAvailabilityResponse>(items);
     }
 
     private static DateTimeOffset NormalizeToDate(DateTimeOffset value) =>

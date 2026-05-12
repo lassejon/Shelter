@@ -479,10 +479,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SearchShelterResponse"
-                  }
+                  "$ref": "#/components/schemas/CollectionResponseOfSearchShelterResponse"
                 }
               }
             }
@@ -694,10 +691,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ShelterDetailResponse"
-                  }
+                  "$ref": "#/components/schemas/CollectionResponseOfShelterDetailResponse"
                 }
               }
             }
@@ -815,10 +809,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/BookingDetailResponse"
-                  }
+                  "$ref": "#/components/schemas/CollectionResponseOfBookingDetailResponse"
                 }
               }
             }
@@ -891,10 +882,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/BookingAvailabilityResponse"
-                  }
+                  "$ref": "#/components/schemas/CollectionResponseOfBookingAvailabilityResponse"
                 }
               }
             }
@@ -1335,10 +1323,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/BookingDetailResponse"
-                  }
+                  "$ref": "#/components/schemas/CollectionResponseOfBookingDetailResponse"
                 }
               }
             }
@@ -1761,6 +1746,62 @@
       },
       "BookingType": {
         "type": "integer"
+      },
+      "CollectionResponseOfBookingAvailabilityResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingAvailabilityResponse"
+            }
+          }
+        }
+      },
+      "CollectionResponseOfBookingDetailResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingDetailResponse"
+            }
+          }
+        }
+      },
+      "CollectionResponseOfSearchShelterResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchShelterResponse"
+            }
+          }
+        }
+      },
+      "CollectionResponseOfShelterDetailResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShelterDetailResponse"
+            }
+          }
+        }
       },
       "ConfirmEmailRequest": {
         "type": "object",

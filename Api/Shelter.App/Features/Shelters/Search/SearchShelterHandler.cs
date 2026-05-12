@@ -27,7 +27,7 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
     /// </summary>
     private const double DescriptionSimilarityThreshold = 0.25;
 
-    public async Task<IReadOnlyList<SearchShelterResponse>> HandleAsync(
+    public async Task<CollectionResponse<SearchShelterResponse>> HandleAsync(
         SearchShelterRequest request,
         CancellationToken cancellationToken)
     {
@@ -123,9 +123,11 @@ public sealed class SearchShelterHandler(IShelterDbContext db, IFileStorage stor
 
         var summaries = await BuildSummariesAsync(shelters.Select(s => s.Id).ToList(), cancellationToken);
 
-        return shelters
+        var items = shelters
             .Select(s => SearchShelterResponse.FromDomain(s, storage, summaries.GetValueOrDefault(s.Id, ReviewSummary.Empty)))
             .ToList();
+
+        return new CollectionResponse<SearchShelterResponse>(items);
     }
 
     private async Task<List<ShelterEntity>> FilterByAvailabilityAsync(
