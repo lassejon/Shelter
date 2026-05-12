@@ -6,7 +6,7 @@ using Shelter.Infrastructure.Storage;
 
 namespace Shelter.Infrastructure.Settings;
 
-public class BlobStorageSettings : Settings<BlobStorageSettings>
+internal class BlobStorageSettings : Settings<BlobStorageSettings>
 {
     public string ConnectionString { get; init; } = null!;
     public string ContainerName { get; init; } = null!;

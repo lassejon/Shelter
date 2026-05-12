@@ -10,7 +10,7 @@ using ShelterEntity = Shelter.Domain.Shelters.Shelter;
 
 namespace Shelter.Infrastructure.Persistence;
 
-public sealed class ShelterDbContext(DbContextOptions<ShelterDbContext> options)
+internal sealed class ShelterDbContext(DbContextOptions<ShelterDbContext> options)
     : IdentityDbContext<User, IdentityRole<Guid>, Guid>(options), IShelterDbContext
 {
     public DbSet<ShelterEntity> Shelters => Set<ShelterEntity>();

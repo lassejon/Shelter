@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Shelter.Api.Configuration;
 using Shelter.Api.Features.Auth;
 using Shelter.Api.Features.Bookings;
@@ -6,8 +5,6 @@ using Shelter.Api.Features.Reviews;
 using Shelter.Api.Features.Shelters;
 using Shelter.Infrastructure;
 using Shelter.Infrastructure.Configuration;
-using Shelter.Infrastructure.Persistence;
-using Shelter.Infrastructure.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,12 +21,7 @@ app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
-    using (var scope = app.Services.CreateScope())
-    {
-        var db = scope.ServiceProvider.GetRequiredService<ShelterDbContext>();
-        await db.Database.MigrateAsync();
-    }
-
+    await app.Services.MigrateDatabaseAsync();
     await app.Services.SeedRolesAsync();
 
     app.MapOpenApi();
@@ -44,7 +36,7 @@ app.UseHttpsRedirection();
 
 // CORS must be applied before Authentication so preflight (OPTIONS) requests
 // are answered without authentication.
-app.UseCors(CorsSettings.PolicyName);
+app.UseAppCors();
 
 app.UseAuthentication();
 app.UseAuthorization();

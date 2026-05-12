@@ -2,12 +2,12 @@ using Microsoft.Extensions.Configuration;
 
 namespace Shelter.Infrastructure.Settings.Base;
 
-public abstract class Settings<T> where T : Settings<T>
+internal abstract class Settings<T> where T : Settings<T>
 {
     public abstract IServiceCollection OnConfigure(IServiceCollection services);
 }
 
-public static class SettingsExtensions
+internal static class SettingsExtensions
 {
     private const string Suffix = "Settings";
 

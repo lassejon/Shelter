@@ -6,7 +6,7 @@ using Shelter.Infrastructure.Settings.Base;
 
 namespace Shelter.Infrastructure.Settings;
 
-public class JwtSettings : Settings<JwtSettings>
+internal class JwtSettings : Settings<JwtSettings>
 {
     public string Issuer { get; init; } = null!;
     public string Audience { get; init; } = null!;

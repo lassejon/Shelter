@@ -2,9 +2,9 @@ using Shelter.Infrastructure.Settings.Base;
 
 namespace Shelter.Infrastructure.Settings;
 
-public class CorsSettings : Settings<CorsSettings>
+internal class CorsSettings : Settings<CorsSettings>
 {
-    public const string PolicyName = "ClientPermission";
+    internal const string PolicyName = "ClientPermission";
 
     public string[] AllowedOrigins { get; init; } = [];
 

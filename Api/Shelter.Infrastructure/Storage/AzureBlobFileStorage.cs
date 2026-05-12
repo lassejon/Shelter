@@ -4,7 +4,7 @@ using Azure.Storage.Blobs.Models;
 
 namespace Shelter.Infrastructure.Storage;
 
-public sealed class AzureBlobFileStorage(BlobContainerClient container) : IFileStorage
+internal sealed class AzureBlobFileStorage(BlobContainerClient container) : IFileStorage
 {
     public async Task UploadAsync(
         string blobKey,
