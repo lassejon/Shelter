@@ -1,4 +1,3 @@
-using App;
 using Microsoft.EntityFrameworkCore;
 using Shelter.Api.Configuration;
 using Shelter.Api.Features.Auth;
@@ -15,10 +14,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi(o => o.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
 builder.Services.ConfigureJsonSerialization();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddShelterApplication();
-builder.Services.AddAuthApplication();
-builder.Services.AddBookingApplication();
-builder.Services.AddReviewApplication();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();

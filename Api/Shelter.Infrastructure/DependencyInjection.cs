@@ -1,5 +1,29 @@
 using App.Auth;
 using App.Common;
+using App.Features.Auth.Login;
+using App.Features.Auth.Me;
+using App.Features.Auth.Register;
+using App.Features.Auth.UpgradeToOwner;
+using App.Features.Bookings.Approve;
+using App.Features.Bookings.Cancel;
+using App.Features.Bookings.Create;
+using App.Features.Bookings.Get;
+using App.Features.Bookings.SearchAvailability;
+using App.Features.Bookings.SearchByBooker;
+using App.Features.Bookings.SearchByShelter;
+using App.Features.Reviews.Create;
+using App.Features.Reviews.Delete;
+using App.Features.Reviews.Get;
+using App.Features.Reviews.GetMine;
+using App.Features.Reviews.SearchByShelter;
+using App.Features.Reviews.SearchPicture;
+using App.Features.Reviews.Update;
+using App.Features.Shelters.Create;
+using App.Features.Shelters.Delete;
+using App.Features.Shelters.Get;
+using App.Features.Shelters.Search;
+using App.Features.Shelters.SearchByOwner;
+using App.Features.Shelters.Update;
 using App.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -56,6 +80,46 @@ public static class DependencyInjection
 
         services.AddScoped<IJwtGenerator, JwtGenerator>();
 
+        AddApplicationHandlers(services);
+
         return services;
+    }
+
+    private static void AddApplicationHandlers(IServiceCollection services)
+    {
+        // Shelters
+        services.AddScoped<CreateShelterHandler>();
+        services.AddScoped<GetShelterHandler>();
+        services.AddScoped<SearchShelterHandler>();
+        services.AddScoped<SearchShelterByOwnerHandler>();
+        services.AddScoped<UpdateShelterHandler>();
+        services.AddScoped<DeleteShelterHandler>();
+
+        // Auth
+        services.AddScoped<LoginHandler>();
+        services.AddScoped<RegisterHandler>();
+        services.AddScoped<UpgradeToOwnerHandler>();
+        services.AddScoped<MeHandler>();
+
+        // Bookings
+        services.AddScoped<CreateBookingHandler>();
+        services.AddScoped<GetBookingHandler>();
+        services.AddScoped<SearchBookingAvailabilityHandler>();
+        services.AddScoped<SearchBookingByBookerHandler>();
+        services.AddScoped<SearchBookingByShelterHandler>();
+        services.AddScoped<ApproveBookingHandler>();
+        services.AddScoped<CancelBookingHandler>();
+
+        // Reviews
+        services.AddScoped<CreateReviewHandler>();
+        services.AddScoped<GetReviewHandler>();
+        services.AddScoped<GetMyReviewHandler>();
+        services.AddScoped<SearchReviewByShelterHandler>();
+        services.AddScoped<SearchReviewPictureHandler>();
+        services.AddScoped<UpdateReviewHandler>();
+        services.AddScoped<DeleteReviewHandler>();
+
+        // Cross-aggregate App utilities
+        services.AddScoped<AssetOrphanRecovery>();
     }
 }

@@ -1,4 +1,3 @@
-using App;
 using App.Common;
 using App.Persistence;
 using Microsoft.Extensions.Configuration;
@@ -33,10 +32,6 @@ public abstract class HandlerTestBase : IAsyncLifetime
         services.AddLogging();
 
         services.AddInfrastructure(configuration);
-        services.AddShelterApplication();
-        services.AddAuthApplication();
-        services.AddBookingApplication();
-        services.AddReviewApplication();
 
         services.RemoveAll<IFileStorage>();
         services.AddSingleton<IFileStorage, InMemoryFileStorage>();
