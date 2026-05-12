@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AxiosError } from 'axios';
@@ -15,6 +16,7 @@ const inputBase =
   'w-full rounded-md border border-slate-300 px-3 py-2 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed';
 
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
@@ -30,9 +32,10 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const onSubmit = handleSubmit(async (values) => {
     setServerErrors([]);
     try {
-      await registerMutation.mutateAsync(values);
-      toast.success('Account created');
+      const response = await registerMutation.mutateAsync(values);
+      toast.success('Confirmation email sent');
       onSuccess();
+      navigate(`/auth/check-email?email=${encodeURIComponent(response.email)}`);
     } catch (error) {
       if (error instanceof AxiosError && error.response) {
         const data = error.response.data as RegisterErrorBody | undefined;

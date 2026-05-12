@@ -41,7 +41,7 @@ public sealed class RegisterEndpointTests(PostgresFixture postgres) : ApiTestBas
     }
 
     [Fact]
-    public async Task Happy_path_returns_200_with_token()
+    public async Task Happy_path_returns_200_with_pending_confirmation_response()
     {
         var response = await Client.PostAsJsonAsync("/api/auth/register", new
         {
@@ -55,7 +55,9 @@ public sealed class RegisterEndpointTests(PostgresFixture postgres) : ApiTestBas
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        json.GetProperty("accessToken").GetString().Should().NotBeNullOrEmpty();
+        // Register no longer auto-logs in: no token, just an email + the confirmation flag.
         json.GetProperty("email").GetString().Should().Be("newuser@test.local");
+        json.GetProperty("requiresEmailConfirmation").GetBoolean().Should().BeTrue();
+        json.TryGetProperty("accessToken", out _).Should().BeFalse();
     }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
@@ -8,12 +8,13 @@
              so the frontend can regenerate paths.d.ts without a running server. -->
         <OpenApiGenerateDocuments>true</OpenApiGenerateDocuments>
         <OpenApiDocumentsDirectory>$(MSBuildThisFileDirectory)../openapi</OpenApiDocumentsDirectory>
-    </PropertyGroup>
+      <UserSecretsId>d29988f4-7880-4b78-ad4b-3117c3cf4683</UserSecretsId>
+  </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6"/>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.6" />
-        <PackageReference Include="NetTopologySuite.IO.GeoJSON4STJ" Version="4.0.0"/>
+        <PackageReference Include="NetTopologySuite.IO.GeoJSON4STJ" Version="4.0.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
@@ -34,9 +35,6 @@
       The package's stock _GenerateOpenApiDocuments hooks BeforeTargets="Build", which runs against the
       previous build's dll and leaves the JSON one build behind.
     -->
-    <Target Name="GenerateOpenApiDocumentsAfterBuild"
-            AfterTargets="Build"
-            Condition=" '$(OpenApiGenerateDocumentsOnBuild)' == 'true' AND ('$(TargetFramework)' == '' OR '$(TargetFrameworks)' == '') "
-            DependsOnTargets="GenerateOpenApiDocuments" />
+    <Target Name="GenerateOpenApiDocumentsAfterBuild" AfterTargets="Build" Condition=" '$(OpenApiGenerateDocumentsOnBuild)' == 'true' AND ('$(TargetFramework)' == '' OR '$(TargetFrameworks)' == '') " DependsOnTargets="GenerateOpenApiDocuments" />
 
 </Project>

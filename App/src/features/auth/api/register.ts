@@ -1,7 +1,7 @@
 import { apiClient } from '@/shared/api/client';
-import type { AuthResponse, RegisterRequest } from '@/features/auth/models/dto';
+import type { RegisterRequest, RegisterResponse } from '@/features/auth/models/dto';
 
-export async function register(body: RegisterRequest): Promise<AuthResponse> {
-  const { data } = await apiClient.post<AuthResponse>('/api/auth/register', body);
+export async function register(body: RegisterRequest): Promise<RegisterResponse> {
+  const { data } = await apiClient.post<RegisterResponse>('/api/auth/register', body);
   return data;
 }

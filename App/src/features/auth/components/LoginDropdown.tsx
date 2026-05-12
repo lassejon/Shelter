@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Calendar, House, Menu, User } from 'lucide-react';
+import { AxiosError } from 'axios';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { useLogin } from '@/features/auth/hooks/useLogin';
 import { useLogout } from '@/features/auth/hooks/useLogout';
+import { useResendConfirmation } from '@/features/auth/hooks/useResendConfirmation';
 import { loginSchema, type LoginInput } from '@/features/auth/models/login.schema';
+import type { LoginEmailNotConfirmedBody } from '@/features/auth/models/dto';
 import { RegisterForm } from './RegisterForm';
 
 type Mode = 'login' | 'register';
@@ -179,6 +182,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<LoginInput>({
@@ -186,19 +190,48 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   });
 
   const loginMutation = useLogin();
+  const resend = useResendConfirmation();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
+    setNeedsConfirmation(false);
     try {
       await loginMutation.mutateAsync(values);
       toast.success('Logged in');
       onSuccess();
-    } catch {
+    } catch (error) {
+      // 403 with `code: "email_not_confirmed"` is the API's signal that credentials are valid
+      // but the account is not yet activated. Surface a distinct affordance so the user can
+      // resend the confirmation without re-typing their email.
+      if (error instanceof AxiosError && error.response?.status === 403) {
+        const body = error.response.data as LoginEmailNotConfirmedBody | undefined;
+        if (body?.code === 'email_not_confirmed') {
+          setNeedsConfirmation(true);
+          setServerError(body.detail ?? 'Please confirm your email before logging in.');
+          return;
+        }
+      }
       setServerError('Invalid email or password');
       setError('password', { message: ' ' });
     }
   });
+
+  function handleResend() {
+    const email = getValues('email');
+    if (!email) {
+      toast.error('Type your email above first');
+      return;
+    }
+    resend.mutate(
+      { email },
+      {
+        onSuccess: () => toast.success('Confirmation email sent'),
+        onError: () => toast.error('Could not resend the email'),
+      },
+    );
+  }
 
   const inputBase =
     'w-full rounded-md border border-slate-300 px-3 py-2 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -207,7 +240,17 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
     <form onSubmit={onSubmit} className="space-y-3">
       {serverError && (
         <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {serverError}
+          <p>{serverError}</p>
+          {needsConfirmation && (
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resend.isPending}
+              className="mt-2 font-medium text-red-700 underline underline-offset-2 hover:text-red-800 disabled:opacity-50"
+            >
+              {resend.isPending ? 'Sending…' : 'Resend confirmation email'}
+            </button>
+          )}
         </div>
       )}
       <input

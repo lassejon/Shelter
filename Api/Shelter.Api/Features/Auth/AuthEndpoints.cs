@@ -1,7 +1,9 @@
+using Shelter.Api.Features.Auth.ConfirmEmail;
 using Shelter.Api.Features.Auth.Login;
 using Shelter.Api.Features.Auth.Logout;
 using Shelter.Api.Features.Auth.Me;
 using Shelter.Api.Features.Auth.Register;
+using Shelter.Api.Features.Auth.ResendConfirmationEmail;
 using Shelter.Api.Features.Auth.UpgradeToOwner;
 
 namespace Shelter.Api.Features.Auth;
@@ -15,6 +17,8 @@ public static class AuthEndpoints
 
         group.MapLogin();
         group.MapRegister();
+        group.MapConfirmEmail();
+        group.MapResendConfirmationEmail();
         group.MapLogout();
         group.MapUpgradeToOwner();
         group.MapMe();

@@ -30,8 +30,42 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Register a new user and return a JWT access token (auto-login). */
+        /** Register a new user. Sends a confirmation email; the account is inactive until the link is clicked. No JWT is issued at this step — call /login after confirming the email. */
         post: operations["Register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/confirm-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm a user's email using the token sent during registration. On success issues a JWT (auto-login) so the user lands signed in. */
+        post: operations["ConfirmEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/resend-confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-send the email confirmation link. Always returns 204 regardless of whether the email exists or is already confirmed (the API does not leak account state). */
+        post: operations["ResendConfirmationEmail"];
         delete?: never;
         options?: never;
         head?: never;
@@ -350,6 +384,11 @@ export interface components {
         };
         BookingStatus: number;
         BookingType: number;
+        ConfirmEmailRequest: {
+            /** Format: uuid */
+            userId?: string;
+            token?: string;
+        };
         CreateBookingRequest: {
             /** Format: date-time */
             startUtc?: string;
@@ -415,6 +454,13 @@ export interface components {
             firstName?: null | string;
             lastName?: null | string;
             isShelterOwner?: boolean;
+        };
+        RegisterResponse: {
+            email: string;
+            requiresEmailConfirmation: boolean;
+        };
+        ResendConfirmationEmailRequest: {
+            email?: string;
         };
         ReviewDetailResponse: {
             /** Format: uuid */
@@ -555,7 +601,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuthResponse"];
+                    "application/json": components["schemas"]["RegisterResponse"];
                 };
             };
             /** @description Bad Request */
@@ -575,6 +621,70 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ProblemDetails"];
                 };
+            };
+        };
+    };
+    ConfirmEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ResendConfirmationEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResendConfirmationEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

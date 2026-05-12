@@ -46,13 +46,69 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Register a new user and return a JWT access token (auto-login).",
+        "summary": "Register a new user. Sends a confirmation email; the account is inactive until the link is clicked. No JWT is issued at this step — call /login after confirming the email.",
         "operationId": "Register",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/auth/confirm-email": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Confirm a user's email using the token sent during registration. On success issues a JWT (auto-login) so the user lands signed in.",
+        "operationId": "ConfirmEmail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmEmailRequest"
               }
             }
           },
@@ -79,8 +135,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -88,6 +144,35 @@
                 }
               }
             }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/auth/resend-confirmation": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Re-send the email confirmation link. Always returns 204 regardless of whether the email exists or is already confirmed (the API does not leak account state).",
+        "operationId": "ResendConfirmationEmail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendConfirmationEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         },
         "security": [
@@ -1677,6 +1762,18 @@
       "BookingType": {
         "type": "integer"
       },
+      "ConfirmEmailRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      },
       "CreateBookingRequest": {
         "type": "object",
         "properties": {
@@ -1919,6 +2016,29 @@
           },
           "isShelterOwner": {
             "type": "boolean"
+          }
+        }
+      },
+      "RegisterResponse": {
+        "required": [
+          "email",
+          "requiresEmailConfirmation"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "requiresEmailConfirmation": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ResendConfirmationEmailRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
           }
         }
       },

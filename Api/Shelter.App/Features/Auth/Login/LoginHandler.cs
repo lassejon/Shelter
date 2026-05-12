@@ -5,12 +5,18 @@ using Shelter.Domain.Users;
 
 namespace App.Features.Auth.Login;
 
+public enum LoginFailure
+{
+    InvalidCredentials,
+    EmailNotConfirmed,
+}
+
 public sealed class LoginHandler(
     UserManager<User> userManager,
     IJwtGenerator jwtGenerator,
     ILogger<LoginHandler> logger)
 {
-    public async Task<AuthResponse?> HandleAsync(
+    public async Task<(AuthResponse? response, LoginFailure? failure)> HandleAsync(
         LoginRequest request,
         CancellationToken cancellationToken)
     {
@@ -19,7 +25,13 @@ public sealed class LoginHandler(
         if (user is null || !await userManager.CheckPasswordAsync(user, request.Password))
         {
             logger.LogInformation("Login failed for {Email}", request.Email);
-            return null;
+            return (null, LoginFailure.InvalidCredentials);
+        }
+
+        if (!user.EmailConfirmed)
+        {
+            logger.LogInformation("Login blocked — email not confirmed for {UserId}", user.Id);
+            return (null, LoginFailure.EmailNotConfirmed);
         }
 
         var roles = (await userManager.GetRolesAsync(user)).ToList();
@@ -27,13 +39,13 @@ public sealed class LoginHandler(
 
         logger.LogInformation("Login succeeded for {UserId}", user.Id);
 
-        return new AuthResponse(
+        return (new AuthResponse(
             user.Id,
             user.Email!,
             user.FirstName,
             user.LastName,
             roles,
             token,
-            expiresAtUtc);
+            expiresAtUtc), null);
     }
 }

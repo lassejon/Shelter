@@ -4,6 +4,8 @@ import ShelterDetailsPage from '@/pages/ShelterDetailsPage';
 import CreateShelterPage from '@/pages/CreateShelterPage';
 import EditShelterPage from '@/pages/settings/EditShelterPage';
 import NotFoundPage from '@/pages/NotFoundPage';
+import CheckEmailPage from '@/pages/auth/CheckEmailPage';
+import ConfirmEmailPage from '@/pages/auth/ConfirmEmailPage';
 import { SettingsLayout } from '@/pages/settings/SettingsLayout';
 import { AccountSettingsPage } from '@/pages/settings/AccountSettingsPage';
 import { BookingsSettingsPage } from '@/pages/settings/BookingsSettingsPage';
@@ -22,6 +24,8 @@ const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       { path: '/shelters/:id', element: <ShelterDetailsPage /> },
+      { path: '/auth/check-email', element: <CheckEmailPage /> },
+      { path: '/auth/confirm-email', element: <ConfirmEmailPage /> },
       {
         path: '/shelters/create',
         element: (

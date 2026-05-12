@@ -1,5 +1,5 @@
-using App.Auth;
-using App.Features.Auth.Shared;
+using App.Common;
+using App.Common.Email;
 using Microsoft.AspNetCore.Identity;
 using Shelter.Domain.Auth;
 using Shelter.Domain.Users;
@@ -14,10 +14,11 @@ public enum RegisterFailure
 
 public sealed class RegisterHandler(
     UserManager<User> userManager,
-    IJwtGenerator jwtGenerator,
+    IEmailSender emailSender,
+    FrontendUrls frontendUrls,
     ILogger<RegisterHandler> logger)
 {
-    public async Task<(AuthResponse? response, RegisterFailure? failure, IReadOnlyList<string>? errors)> HandleAsync(
+    public async Task<(RegisterResponse? response, RegisterFailure? failure, IReadOnlyList<string>? errors)> HandleAsync(
         RegisterRequest request,
         CancellationToken cancellationToken)
     {
@@ -50,20 +51,38 @@ public sealed class RegisterHandler(
             await userManager.AddToRoleAsync(user, AppRoles.ShelterOwner);
         }
 
-        var roles = (await userManager.GetRolesAsync(user)).ToList();
-        var (token, expiresAtUtc) = jwtGenerator.GenerateToken(user.Id, user.Email!, roles);
+        await SendConfirmationEmailAsync(user, cancellationToken);
 
-        logger.LogInformation("Registered user {UserId} with roles {Roles}", user.Id, roles);
+        logger.LogInformation("Registered user {UserId}; awaiting email confirmation", user.Id);
 
-        var response = new AuthResponse(
-            user.Id,
-            user.Email!,
-            user.FirstName,
-            user.LastName,
-            roles,
-            token,
-            expiresAtUtc);
-
-        return (response, null, null);
+        return (new RegisterResponse(user.Email!, RequiresEmailConfirmation: true), null, null);
     }
+
+    private async Task SendConfirmationEmailAsync(User user, CancellationToken cancellationToken)
+    {
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        var confirmUrl = BuildConfirmUrl(user.Id, token);
+
+        var subject = "Confirm your Shelter account";
+        var textBody =
+            $"Welcome to Shelter!\n\n" +
+            $"Please confirm your email by clicking the link below:\n\n" +
+            $"{confirmUrl}\n\n" +
+            $"If you didn't create this account, you can safely ignore this email.";
+        var htmlBody =
+            $"""
+            <p>Welcome to Shelter!</p>
+            <p>Please confirm your email by clicking the button below:</p>
+            <p><a href="{confirmUrl}" style="display:inline-block;padding:12px 20px;background:#1f8a6e;color:#fff;text-decoration:none;border-radius:6px;">Confirm email</a></p>
+            <p>Or paste this link into your browser:<br><code>{confirmUrl}</code></p>
+            <p style="color:#64748b;font-size:13px;">If you didn't create this account, you can safely ignore this email.</p>
+            """;
+
+        await emailSender.SendAsync(user.Email!, subject, htmlBody, textBody, cancellationToken);
+    }
+
+    private string BuildConfirmUrl(Guid userId, string token) =>
+        $"{frontendUrls.BaseUrl.TrimEnd('/')}/auth/confirm-email" +
+        $"?userId={userId}" +
+        $"&token={Uri.EscapeDataString(token)}";
 }

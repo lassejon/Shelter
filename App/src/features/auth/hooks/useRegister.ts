@@ -1,15 +1,14 @@
 import { useMutation } from '@tanstack/react-query';
 import { register } from '@/features/auth/api/register';
-import { useAuthStore } from '@/features/auth/stores/auth.store';
-import type { AuthResponse, RegisterRequest } from '@/features/auth/models/dto';
+import type { RegisterRequest, RegisterResponse } from '@/features/auth/models/dto';
 
+/**
+ * Submits the register form. Unlike the prior auto-login flow, the response carries no JWT —
+ * the user must click the confirmation link in their email before they can log in. The form
+ * redirects to the "check your email" page on success.
+ */
 export function useRegister() {
-  const setAuth = useAuthStore((state) => state.setAuth);
-
-  return useMutation<AuthResponse, Error, RegisterRequest>({
+  return useMutation<RegisterResponse, Error, RegisterRequest>({
     mutationFn: register,
-    onSuccess: (response) => {
-      setAuth(response);
-    },
   });
 }

@@ -1,5 +1,4 @@
 using App.Features.Auth.Register;
-using App.Features.Auth.Shared;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,13 +10,16 @@ public static class RegisterEndpoint
     {
         group.MapPost("/register", HandleAsync)
             .WithName("Register")
-            .WithSummary("Register a new user and return a JWT access token (auto-login).")
+            .WithSummary(
+                "Register a new user. Sends a confirmation email; the account is inactive " +
+                "until the link is clicked. No JWT is issued at this step — call /login after " +
+                "confirming the email.")
             .AllowAnonymous();
 
         return group;
     }
 
-    private static async Task<Results<Ok<AuthResponse>, BadRequest<ProblemDetails>, Conflict<ProblemDetails>>> HandleAsync(
+    private static async Task<Results<Ok<RegisterResponse>, BadRequest<ProblemDetails>, Conflict<ProblemDetails>>> HandleAsync(
         RegisterRequest request,
         RegisterHandler handler,
         CancellationToken cancellationToken)

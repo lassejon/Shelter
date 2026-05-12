@@ -1,8 +1,10 @@
 using App.Auth;
 using App.Common;
+using App.Features.Auth.ConfirmEmail;
 using App.Features.Auth.Login;
 using App.Features.Auth.Me;
 using App.Features.Auth.Register;
+using App.Features.Auth.ResendConfirmationEmail;
 using App.Features.Auth.UpgradeToOwner;
 using App.Features.Bookings.Approve;
 using App.Features.Bookings.Cancel;
@@ -77,6 +79,8 @@ public static class DependencyInjection
         services.AddSettings<JwtSettings>(configuration);
         services.AddSettings<BlobStorageSettings>(configuration);
         services.AddSettings<CorsSettings>(configuration);
+        services.AddSettings<FrontendSettings>(configuration);
+        services.AddSettings<SendGridSettings>(configuration);
 
         services.AddScoped<IJwtGenerator, JwtGenerator>();
 
@@ -98,6 +102,8 @@ public static class DependencyInjection
         // Auth
         services.AddScoped<LoginHandler>();
         services.AddScoped<RegisterHandler>();
+        services.AddScoped<ConfirmEmailHandler>();
+        services.AddScoped<ResendConfirmationEmailHandler>();
         services.AddScoped<UpgradeToOwnerHandler>();
         services.AddScoped<MeHandler>();
 
