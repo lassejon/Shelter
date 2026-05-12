@@ -2,7 +2,7 @@ using App.Features.Shelters.Search;
 using Microsoft.Extensions.DependencyInjection;
 using Shelter.IntegrationTests.Infrastructure;
 
-namespace Shelter.IntegrationTests.Tier2.Shelters;
+namespace Shelter.IntegrationTests.Handlers.Shelters;
 
 /// <summary>
 /// Proves the <c>[DbFunction]</c> mapping in <c>ShelterDbContext.OnModelCreating</c> translates to

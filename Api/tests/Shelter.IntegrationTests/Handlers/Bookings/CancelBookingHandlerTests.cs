@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shelter.Domain.Common;
 using Shelter.IntegrationTests.Infrastructure;
 
-namespace Shelter.IntegrationTests.Tier2.Bookings;
+namespace Shelter.IntegrationTests.Handlers.Bookings;
 
 /// <summary>
 /// Proves the handler reads <see cref="App.Common.IClock.UtcNow"/> rather than

@@ -5,7 +5,7 @@ using Shelter.Domain.Common;
 using Shelter.Domain.Reviews;
 using Shelter.IntegrationTests.Infrastructure;
 
-namespace Shelter.IntegrationTests.Tier2.Reviews;
+namespace Shelter.IntegrationTests.Handlers.Reviews;
 
 /// <summary>
 /// The "one review per (shelter, reviewer)" invariant has two enforcement layers:

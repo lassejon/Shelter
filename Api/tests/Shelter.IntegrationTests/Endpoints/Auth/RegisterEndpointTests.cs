@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Shelter.IntegrationTests.Infrastructure;
 
-namespace Shelter.IntegrationTests.Tier3.Auth;
+namespace Shelter.IntegrationTests.Endpoints.Auth;
 
 /// <summary>
 /// The shape <c>{ status: 400, ..., errors: string[] }</c> is the contract the frontend's
