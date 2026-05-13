@@ -34,6 +34,7 @@ using Microsoft.Extensions.Hosting;
 using Shelter.Domain.Users;
 using Shelter.Infrastructure.Auth;
 using Shelter.Infrastructure.Common;
+using Shelter.Infrastructure.Configuration;
 using Shelter.Infrastructure.Persistence;
 using Shelter.Infrastructure.Settings;
 using Shelter.Infrastructure.Settings.Base;
@@ -85,6 +86,13 @@ public static class DependencyInjection
         services.AddScoped<IJwtGenerator, JwtGenerator>();
 
         AddApplicationHandlers(services);
+
+        // Demo data seeding runs at host startup via IHostedService — only registered when
+        // the Demo:SeedEnabled flag is set, so production never pulls it into the DI graph.
+        if (configuration.GetValue("Demo:SeedEnabled", false))
+        {
+            services.AddHostedService<DemoDataSeeder>();
+        }
 
         return services;
     }
