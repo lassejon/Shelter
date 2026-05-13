@@ -29,6 +29,12 @@ public sealed class ShelterConfiguration : IEntityTypeConfiguration<ShelterEntit
             .HasColumnType($"geography (point, {SpatialReference.Wgs84})")
             .IsRequired();
 
+        // GIST spatial index — turns ST_Intersects / IsWithinDistance from sequential scan
+        // into a bitmap-index lookup. Without it the bbox and radius queries in
+        // SearchShelterHandler would full-scan the table at any non-trivial row count.
+        builder.HasIndex(s => s.Location)
+            .HasMethod("gist");
+
         builder.Property(s => s.BookingPolicy)
             .HasConversion<int>()
             .IsRequired();
