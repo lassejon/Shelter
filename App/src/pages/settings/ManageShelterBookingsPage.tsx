@@ -141,7 +141,7 @@ function BookingRow({ booking }: { booking: BookingDetailResponse }) {
   const busy = approveMutation.isPending || cancelMutation.isPending;
 
   function handleApprove() {
-    approveMutation.mutate(String(booking.id), {
+    approveMutation.mutate(booking.id, {
       onSuccess: () => toast.success('Booking approved'),
       onError: () => toast.error('Could not approve booking'),
     });

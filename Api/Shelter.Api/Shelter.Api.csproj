@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
@@ -8,8 +7,8 @@
              so the frontend can regenerate paths.d.ts without a running server. -->
         <OpenApiGenerateDocuments>true</OpenApiGenerateDocuments>
         <OpenApiDocumentsDirectory>$(MSBuildThisFileDirectory)../openapi</OpenApiDocumentsDirectory>
-      <UserSecretsId>d29988f4-7880-4b78-ad4b-3117c3cf4683</UserSecretsId>
-  </PropertyGroup>
+        <UserSecretsId>d29988f4-7880-4b78-ad4b-3117c3cf4683</UserSecretsId>
+    </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
