@@ -9,7 +9,7 @@ namespace App.Features.Auth.Register;
 public enum RegisterFailure
 {
     EmailAlreadyExists,
-    InvalidPassword,
+    UnknownValidation,
 }
 
 public sealed class RegisterHandler(
@@ -43,7 +43,7 @@ public sealed class RegisterHandler(
         {
             var errors = create.Errors.Select(e => e.Description).ToList();
             logger.LogInformation("Register failed for {Email}: {Errors}", request.Email, string.Join("; ", errors));
-            return (null, RegisterFailure.InvalidPassword, errors);
+            return (null, RegisterFailure.UnknownValidation, errors);
         }
 
         if (request.IsShelterOwner)

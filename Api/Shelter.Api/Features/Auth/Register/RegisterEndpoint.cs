@@ -36,7 +36,7 @@ public static class RegisterEndpoint
             });
         }
 
-        if (failure == RegisterFailure.InvalidPassword)
+        if (failure == RegisterFailure.UnknownValidation)
         {
             var problem = new ProblemDetails
             {
