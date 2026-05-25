@@ -2,6 +2,7 @@ using App.Auth;
 using App.Common;
 using App.Features.Auth.ConfirmEmail;
 using App.Features.Auth.Login;
+using App.Features.Auth.Me;
 using App.Features.Auth.Register;
 using App.Features.Auth.ResendConfirmationEmail;
 using App.Features.Auth.UpgradeToOwner;
@@ -112,6 +113,7 @@ public static class DependencyInjection
         services.AddScoped<ConfirmEmailHandler>();
         services.AddScoped<ResendConfirmationEmailHandler>();
         services.AddScoped<UpgradeToOwnerHandler>();
+        services.AddScoped<MeHandler>();
 
         // Bookings
         services.AddScoped<CreateBookingHandler>();
