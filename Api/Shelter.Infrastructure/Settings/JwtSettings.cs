@@ -36,6 +36,7 @@ internal class JwtSettings : Settings<JwtSettings>
                     ValidAudience = Audience,
                     ValidIssuer = Issuer,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Secret)),
+                    ClockSkew = TimeSpan.Zero
                 };
             });
 

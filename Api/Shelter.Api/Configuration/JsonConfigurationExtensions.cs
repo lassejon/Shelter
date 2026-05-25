@@ -12,7 +12,10 @@ public static class JsonConfigurationExtensions
     {
         services.ConfigureHttpJsonOptions(options =>
         {
-            // Prevent circular reference issues when serializing related entities
+            // Prevent circular reference issues when serializing related entities.
+            // Example: Shelter has a Pictures collection; each ShelterPicture has a Shelter
+            // Without IgnoreCycles: { "id": "s1", "pictures": [ { "id": "p1", "shelter": { "id": "s1", "pictures": [ { "id": "p1", "shelter": { ... } } ] } } ] }
+            // With IgnoreCycles: { "id": "s1", "pictures": [ { "id": "p1", "shelter": null } ] }
             options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 
             // Serialize NetTopologySuite geometry types as GeoJSON (Point.X/Y as doubles, etc.)

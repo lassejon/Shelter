@@ -20,12 +20,10 @@ internal sealed class BearerSecuritySchemeTransformer(
             return;
         }
 
-        const string schemeName = "Bearer";
-
         document.Components ??= new OpenApiComponents();
         document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
 
-        document.Components.SecuritySchemes[schemeName] = new OpenApiSecurityScheme
+        document.Components.SecuritySchemes[JwtBearerDefaults.AuthenticationScheme] = new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.Http,
             Scheme = "bearer",
@@ -35,12 +33,13 @@ internal sealed class BearerSecuritySchemeTransformer(
             Description = "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'."
         };
 
-        foreach (var operation in document.Paths.Values.SelectMany(p => p.Operations.Values))
+        foreach (var operation in document.Paths.Values.SelectMany(p => p.Operations?.Values))
         {
             operation.Security ??= [];
+
             operation.Security.Add(new OpenApiSecurityRequirement
             {
-                [new OpenApiSecuritySchemeReference(schemeName, document)] = []
+                [new OpenApiSecuritySchemeReference(JwtBearerDefaults.AuthenticationScheme, document)] = []
             });
         }
     }

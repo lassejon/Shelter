@@ -15,6 +15,7 @@ export function useConfirmEmail() {
     mutationFn: confirmEmail,
     onSuccess: (response) => {
       setAuth(response);
+      // Invalidate everything — auth state just flipped to authenticated, so any token-gated query needs to refetch.
       queryClient.invalidateQueries();
     },
   });

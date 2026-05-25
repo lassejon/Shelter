@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AuthResponse } from '@/features/auth/models/dto';
 
-interface AuthState {
+type AuthState = {
   userId: string | null;
   token: string | null;
   email: string | null;
@@ -13,7 +13,7 @@ interface AuthState {
   isAuthenticated: boolean;
 }
 
-interface AuthActions {
+type AuthActions = {
   setAuth: (response: AuthResponse) => void;
   logout: () => void;
 }

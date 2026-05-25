@@ -6,6 +6,10 @@ using Shelter.Api.Extensions;
 
 namespace Shelter.Api.Features.Auth.Me;
 
+// Originally intended as an ad-hoc session-renewal hook (re-issues a JWT on every call) to defer
+// implementing real refresh tokens. With the current FE cache config it only fires once at app
+// boot, so the effective role is boot-time identity reconciliation (stale localStorage vs. fresh
+// roles/profile, detect account-deleted). Session extension belongs to refresh tokens — TODO.
 public static class MeEndpoint
 {
     public static RouteGroupBuilder MapMe(this RouteGroupBuilder group)
