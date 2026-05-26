@@ -2,10 +2,13 @@ namespace App.Features.Shelters.Search;
 
 public class SearchShelterRequest
 {
+    // Bbox
     public double? MinLatitude { get; set; }
     public double? MaxLatitude { get; set; }
     public double? MinLongitude { get; set; }
     public double? MaxLongitude { get; set; }
+    
+    // Filters
     public int? Limit { get; set; }
     public int? MinRating { get; set; }
     public int? MinCapacity { get; set; }
